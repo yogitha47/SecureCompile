@@ -61,7 +61,7 @@ tokens = [
     "LPAREN", "RPAREN",
     "LBRACE", "RBRACE",
     "LBRACKET", "RBRACKET",
-    "SEMICOLON", "COMMA", "DOT", "COLON", "QUESTION",
+    "SEMICOLON", "COMMA", "DOT", "COLON", "QUESTION", "ARROW",
 ] + list(reserved.values())
 
 # --------------------------------------
@@ -94,6 +94,7 @@ def t_BLOCK_COMMENT(t):
 # Keep these before single-character operator rules.
 # --------------------------------------
 
+t_ARROW = r"->"
 t_INCREMENT = r"\+\+"
 t_DECREMENT = r"--"
 
@@ -175,12 +176,15 @@ def t_CHARACTER(t):
 # --------------------------------------
 
 def t_NUMBER(t):
-    r"((\d+\.\d*|\.\d+)([eE][+-]?\d+)?|\d+[eE][+-]?\d+|\d+)"
+    r"(0[xX][0-9a-fA-F]+[uUlL]*|((\d+\.\d*|\.\d+)([eE][+-]?\d+)?|\d+[eE][+-]?\d+)[fFlL]?|\d+[uUlL]*)"
 
-    if any(c in t.value for c in ".eE"):
-        t.value = float(t.value)
+    text = t.value
+    if text[:2] in ("0x", "0X"):
+        t.value = int(text.rstrip("uUlL"), 16)
+    elif any(c in text for c in ".eE"):
+        t.value = float(text.rstrip("fFlL"))
     else:
-        t.value = int(t.value)
+        t.value = int(text.rstrip("uUlL"))
 
     return t
 
@@ -212,19 +216,15 @@ def t_newline(t):
 # --------------------------------------
 
 def t_error(t):
-    message = (
-        f"Illegal character {t.value[0]!r} "
-        f"at line {t.lineno}"
-    )
-
+    # Record the problem for the caller instead of printing; the parse
+    # wrapper turns these into syntax diagnostics with line and column.
     errors = getattr(t.lexer, "errors", None)
 
     if errors is None:
         t.lexer.errors = []
         errors = t.lexer.errors
 
-    errors.append(message)
-    print(message)
+    errors.append({"line": t.lineno, "lexpos": t.lexpos, "char": t.value[0]})
     t.lexer.skip(1)
 
 

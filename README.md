@@ -1,716 +1,110 @@
-SecureCompile Intelligence
-Compiler-Based Static Security Analysis with Syntax Error Recovery and ML-Assisted Multi-Vulnerability Detection
-SecureCompile is an educational software-security project that analyzes C source code using compiler-design techniques and static security analysis. Its planned evolution combines a compiler-aware frontend, syntax error recovery, rule-based vulnerability detection, machine learning, explainable findings, and guided remediation.
+# SecureCompile
 
-The goal is to help developers identify multiple potential vulnerabilities in a single scan, understand why code may be unsafe, and receive useful guidance for correcting it.
-Development status: The existing project contains a Flask application and a custom compiler-inspired analysis pipeline. ML-assisted vulnerability detection, improved syntax error recovery, advanced data-flow analysis, and guided remediation must be treated as planned features until implemented and tested.
+A local Flask web app that analyses C source with a PLY-based parser (with syntax-error recovery), AST and text-pattern security rules, an optional trained ML model and an optional GCC/Clang front end. Every finding shows which engine reported it and how uncertain it is, and the app can propose (never silently apply) fixes and validate them.
 
-PART A — PROJECT DOCUMENTATION
-1. Project Vision
-SecureCompile aims to go beyond a basic syntax checker or a security scanner that only displays warnings.
+Submitted code is **never executed**; the only external process is `gcc/clang -fsyntax-only`, when installed.
 
-The intended platform combines:
-1. Compiler-based source-code processing.
-2. Recovery from common syntax errors.
-3. Rule-based security analysis.
-4. ML-assisted multi-label vulnerability prediction.
-5. Compiler-aware evidence and source-location mapping.
-6. Finding correlation and duplicate detection.
-7. Explainable findings and suggested corrections.
-8. Reproducible evaluation and transparent reporting.
-The proposed contribution is the integration and evaluation of these capabilities in one educational C-code analysis workflow. Claims of uniqueness must be supported by research and comparison with existing tools.
-2. Problem Statement
-C programs may contain syntax errors, programming mistakes, and security vulnerabilities. A parser that stops at the first syntax error can prevent subsequent statements from being analyzed. Rule-based scanners may also miss patterns outside their implemented rules, while machine-learning models can produce false positives and false negatives.
+## What is implemented (verified)
 
-SecureCompile aims to combine compiler analysis, syntax recovery, deterministic rules, and ML-assisted predictions to improve multi-vulnerability detection and explainability.
-3. Objectives
-- Analyze C source code through a compiler-inspired pipeline.
-- Support multiple potential vulnerability findings in a single scan.
-- Recover from common syntax errors, including missing semicolons, wherever safe.
-- Continue analyzing unaffected statements after recoverable errors.
-- Detect known vulnerability patterns using deterministic security rules.
-- Train and evaluate an ML model that predicts multiple vulnerability categories.
-- Combine results from different analysis engines without hiding distinct findings.
-- Explain vulnerabilities with evidence, source locations, severity, and suggested corrections where supported.
-- Provide a functional web interface for code submission and result inspection.
-- Evaluate the system using held-out data and document its limitations.
-4. Current Project Architecture
-The existing project uses Python, Flask, and a custom compiler-inspired pipeline.
-C Source Code
-     |
-     v
-Lexical Analysis
-     |
-     v
-Parsing and AST Construction
-     |
-     v
-Semantic Analysis and Symbol Table
-     |
-     v
-Rule-Based Security Analysis
-     |
-     v
-Supplementary Source-Level Checks
-     |
-     v
-Security Findings and Reports
-The actual capabilities of each stage must be verified against the current repository.
-Existing project files
-File or directory	Purpose
-app.py	Flask application and request handling
-src/lexer.py	Lexical analysis
-src/parser.py	Parsing and AST construction
-src/ast_nodes.py	AST node definitions
-src/semantic.py	Semantic analysis
-src/symbol_table.py	Symbol-table functionality
-src/security_analyzer.py	Rule-based security checks
-src/source_analyzer.py	Supplementary source-level checks
-src/test_all.py	Test-suite entry point, if present
-src/evaluate_dataset.py	Dataset evaluation, if present
-templates/	Flask HTML templates
-static/	CSS, JavaScript, and static assets
-reports/	Generated analysis and evaluation reports
+| Area | Status |
+|---|---|
+| Parser with error recovery | Missing `;` is repaired by a restricted semicolon-insertion step (only when the parser's state accepts `;` and the next token starts a new line, `}`, a type or statement keyword). Other errors use grammar `error` productions (statements, `if`/`while` conditions, call arguments). Diagnostics have line/column; the user's source is never changed. |
+| Syntax vs security | Syntax/lexical/delimiter diagnostics are a separate list from security findings. If a compiler is installed and accepts the code, parser complaints are labelled `unsupported-construct` instead of `syntax-error`. |
+| Rules | AST analyzer (division by zero, uninitialised use, constant conditions, unsafe calls, format strings) plus text-pattern checks (gets/strcpy/strcat/sprintf, unbounded scanf, free/double-free/use-after-free/NULL deref/leak heuristics, etc.). |
+| ML | TF-IDF + one-vs-rest logistic regression, 11 categories, per-category thresholds chosen on a validation split. Trained on NIST Juliet (see limits below). |
+| Correlation | Same issue from two rule engines is merged (engines listed); different issues on one line stay separate. ML findings carry `ml_confidence`; rule findings never do. Rule/ML agreement and disagreement are shown for review, not auto-resolved. |
+| Fixes | `Fix this issue` and `Generate corrected code`: exact-offset edits, diff, per-change explanation, assumptions, reject/restore, and validation (parser, compiler if present, fresh rule scan, ML re-scan if available). |
+| Web UI | Filters (severity, category, engine, agreement, uncertainty, search), provenance chips, ML probability panel, syntax panel, fix panel, report download, batch review, measured-evaluation panel. |
 
+### Fixable rules (deterministic, with stated assumptions)
+`gets`→`fgets`, unbounded `scanf %s`→width from a literal array size, `sprintf`→`snprintf`, `strcpy`→bounded `snprintf`, `strcat`→`strncat`, `printf(x)`→`printf("%s", x)`, free of an uninitialised pointer→`= NULL`, double free→`p = NULL` after the first free, uninitialised scalar→placeholder `0`, and missing `;`. A fix is only offered when the destination is a char array visible in the same function; otherwise (or for division by zero, NULL dereference, use-after-free, leaks, command execution, array-size errors, logic warnings) the result is **review required** with guidance, never a guessed value. ML-only findings never produce a fix.
 
-This is an expected inventory, not a guarantee that every file is present in the same form. Inspect the actual project before modifying it.
-5. Planned Hybrid Architecture
-                  C Source Code
-                        |
-             Source and Syntax Checks
-                        |
-              Lexer and Error Recovery
-                        |
-                 Parser and AST
-                        |
-             Semantic and Symbol Analysis
-                        |
-           +------------+------------+
-           |                         |
-           v                         v
-    Rule-Based Engine          ML Prediction Engine
-           |                         |
-           v                         v
-     Rule Findings              ML Predictions
-           |                         |
-           +------------+------------+
-                        |
-             Finding Correlation Layer
-             - Deduplication
-             - Evidence association
-             - Source-location mapping
-             - Confidence and uncertainty
-                        |
-                        v
-                Unified Security Report
-                        |
-                        v
-                 SecureCompile Website
-Source-level fallback analysis must remain possible when parsing fails. The absence of a complete AST must not automatically suppress every potential security finding.
-6. Multi-Vulnerability Detection
-The intended system should detect multiple supported vulnerability categories in one scan.
+### Validation status
+`Passed` = parser did not get worse, the compiler ran with 0 errors, and the rescan shows the targeted finding gone with nothing new. `Failed` = any executed check found a problem. `Unable to verify` = no compiler ran, or compiler errors remain in the proposed code. Regression tests are always reported as **not run** (the submitted program is never executed). Validation is evidence, not a guarantee.
 
-Potential categories include:
-- Division by zero.
-- Modulo by zero.
-- Uninitialized variables.
-- Unsafe input functions.
-- Potential buffer overflows.
-- Unsafe string operations.
-- Format-string vulnerabilities.
-- Suspicious command execution.
-- Null-pointer dereferences.
-- Out-of-bounds array access.
-- Integer overflow where reliably analyzable.
-- Other categories after their detection logic has been implemented and evaluated.
-The presence of a function name alone does not always prove a vulnerability. Each rule must define its evidence requirements, severity policy, and known limitations.
-7. Syntax Error Recovery
-SecureCompile should attempt to analyze code containing common syntax mistakes.
+## Setup
 
-Example:
-int main() {
-    int x = 10
-    int y = 0;
-    int result = x / y
-    gets(name);
-    return 0;
-}
-The intended behavior is to report missing semicolons and continue analyzing later statements wherever possible.
-
-Requirements:
-- Report syntax errors with line and column information where available.
-- Recover from common missing-semicolon errors.
-- Continue analyzing unaffected statements.
-- Run source-level fallback checks when parsing fails.
-- Separate syntax diagnostics from security findings.
-- Mark findings that could not be verified because parsing was incomplete.
-- Preserve the user's original source.
-- Show any proposed syntax repair separately.
-Do not claim that arbitrary malformed C can always be recovered. Severely malformed code may remain only partially analyzable.
-8. ML-Assisted Multi-Label Detection
-The planned ML engine must use a genuine trained model, not a keyword-matching function presented as machine learning.
-Proposed approach
-Begin with a lightweight multi-label classification baseline using scikit-learn, such as TF-IDF or code-token features with an appropriate multi-label classifier.
-
-The model should:
-1. Learn from labeled C-code examples.
-2. Predict multiple supported vulnerability categories.
-3. Use a reproducible preprocessing and training pipeline.
-4. Save the trained model and preprocessing artifacts.
-5. Load the model for inference without retraining on every request.
-6. Distinguish predictions from deterministic rule findings.
-7. Handle malformed input and model-loading failures safely.
-8. Be evaluated on held-out examples.
-Dataset research
-Investigate the NIST Software Assurance Reference Dataset (SARD) and other suitable labeled datasets. Verify dataset availability, licensing, labels, preprocessing requirements, and relevance to the chosen vulnerability categories.
-
-Avoid training/test leakage caused by duplicate or near-duplicate code. Keep training, validation, and held-out test data separate.
-Evaluation requirements
-Compare:
-- Rule-based analysis alone.
-- ML-based analysis alone.
-- The combined hybrid system.
-Report per-category precision, recall, F1-score, false positives, false negatives, dataset details, and the evaluation methodology.
-
-Do not invent metrics or reuse results from a small predefined regression set as evidence of ML performance. Model confidence is not proof that a vulnerability exists.
-9. Compiler Compatibility
-Aim for broad, standards-aware C support.
-
-Inspect the existing PLY-based parser and identify supported and unsupported constructs. Evaluate whether Clang or another established C frontend would provide more reliable parsing, source locations, type information, and compiler diagnostics while preserving the existing custom security-analysis contribution.
-
-Potential language features include pointers, arrays, structures, unions, function pointers, scope, types, macros, preprocessor directives, and standard-library calls.
-
-Do not claim complete C standards compliance until it has been verified with suitable conformance tests. When a construct is unsupported, report the limitation clearly and continue independent analysis where safe.
-10. Finding Correlation and Explainability
-Each finding should contain appropriate fields such as:
-- Finding identifier.
-- Vulnerability category or rule ID.
-- Severity.
-- Source file and location, when available.
-- Evidence or relevant code snippet.
-- Explanation.
-- Detection engine.
-- Confidence or uncertainty, where applicable.
-- Suggested correction, when supported.
-- Verification status.
-Deduplicate only findings that refer to the same underlying issue. Do not merge distinct vulnerabilities simply because they occur on the same line.
-
-Explain why a finding matters and show evidence supporting it. Suggested fixes must remain suggestions until validated. ML predictions should be clearly labeled as predictions.
-11. Website Requirements
-Preserve and improve the existing Flask website rather than replacing it with a static mockup.
-
-The intended experience includes:
-1. Source-code editor or upload area.
-2. Analyze/scan action.
-3. Syntax diagnostics separated from security findings.
-4. Summary of findings by category and severity.
-5. Source-code locations where supported.
-6. Filters for severity, category, and detection engine.
-7. Evidence and explanation panels.
-8. ML predictions with uncertainty labels.
-9. Suggested corrections and before/after comparisons.
-10. Rescanning after code changes.
-11. A genuine model-evaluation page.
-12. Structured report export, if implemented.
-13. A functional Fix This Issue action for individual findings, when a meaningful correction can be proposed.
-14. A Generate Corrected Code action for the full program.
-15. Original-versus-proposed code comparison (diff), with an explanation of every meaningful change.
-16. A way to accept, reject, or restore a proposed correction without losing the original source.
-17. Post-fix validation results based on checks that actually ran.
-Intelligent Code Correction — Detect → Explain → Fix → Validate
-SecureCompile should help users investigate and correct issues, not merely display warnings. The correction workflow must be integrated with the existing analysis pipeline and must perform real work; it must not be a static UI mockup.
-
-Detect
-- Identify supported syntax issues and potential security vulnerabilities.
-- Show evidence and source locations when available.
-- Distinguish deterministic rule findings from ML predictions.
-Explain
-- Explain why the issue may be unsafe and what evidence supports the finding.
-- Describe the suggested remediation and any assumptions or behavior changes it could introduce.
-Fix
-- Offer Fix This Issue for an individual finding where a meaningful fix can be proposed.
-- Offer Generate Corrected Code for the full program.
-- Use deterministic, rule-based transformations for safe and well-defined corrections. Use template-based or AI-assisted generation where appropriate.
-- Show a before/after diff and explain each meaningful change.
-- Preserve the original source and let the user review, accept, reject, or restore proposed code.
-- Never silently change program behavior or invent an assumption when the intended behavior is unclear. In such cases, explain the uncertainty and ask for developer review.
-- Treat ML predictions as one source of evidence, not as proof of the correct repair.
-Validate
-- Re-run the available parser, semantic checks, compiler diagnostics (only if an actual compiler was used), regression tests, and security scan against the proposed code.
-- Show Passed, Failed, or Unable to verify according to the checks that actually ran.
-- List failed or unavailable checks. If the proposed fix introduces new errors or findings, show them.
-- Never call a fix “correct” or “verified” merely because code was generated. A passing validation only establishes that the configured checks passed; it is not a guarantee of complete security.
-The intended workflow is Detect → Explain → Fix → Validate → Review. Some issues cannot be fixed automatically because correctness depends on program intent, runtime behavior, or application context. Mark those cases clearly rather than fabricating a repair.
-
-Keep the existing lavender, purple, white, and dark-code-editor visual direction where compatible with the current UI.
-
-All buttons and controls must perform real actions. Do not display hardcoded metrics as actual results.
-
-Do not execute submitted C code as part of ordinary static analysis.
-12. Evaluation and Testing
-Add regression tests for:
-- Safe C programs.
-- One recognized vulnerability.
-- Multiple vulnerabilities in a single program.
-- Duplicate findings.
-- Missing semicolons followed by security issues.
-- Multiple recoverable syntax errors.
-- Severely malformed source.
-- Unsupported C constructs.
-- Empty input.
-- ML predictions on unseen examples.
-- ML model-loading and inference failures.
-- Flask routes and invalid requests.
-- Correct report serialization.
-- Suggested fixes that preserve the original source.
-Compare rule-only, ML-only, and combined results using the same appropriately held-out evaluation set.
-
-Report the evaluation unit, matching criteria, data splits, category distribution, and limitations. Do not use accuracy alone or claim perfect real-world detection.
-13. Setup and Usage
-Requirements
-- A compatible Python version.
-- Flask and PLY.
-- Other dependencies recorded in requirements.txt.
-- Additional ML dependencies, such as scikit-learn, once implemented.
-- Optional external compiler tools, if used by the final architecture.
-Windows PowerShell
-git clone <YOUR_GITHUB_REPOSITORY_URL>
-cd SecureCompile
-
+Windows PowerShell:
+```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
-
-python -m pip install -r requirements.txt
-python app.py
-Open the local address shown in the terminal, normally http://127.0.0.1:5000.
-
-The actual repository name and setup commands must be confirmed against the final repository.
-Existing test commands
-python src\test_all.py
-python src\evaluate_dataset.py
-Use the actual test entry points present in the repository.
-
-After ML implementation, document the verified commands for dataset preparation, model training, evaluation, regression tests, and application startup. Training must remain separate from normal website requests.
-14. Limitations and Responsible Claims
-SecureCompile is an educational prototype, not a replacement for professional security testing.
-- Parser support may be incomplete.
-- Syntax recovery may fail on severely malformed source.
-- Static rules can produce false positives and false negatives.
-- ML models can miss vulnerabilities or incorrectly flag safe code.
-- Exact source locations require supporting evidence.
-- Suggested fixes must be reviewed and tested.
-- Results apply only to the tested data and methodology.
-- No findings does not mean that code is secure.
-15. Future Work
-- Improve standards-aware C parsing.
-- Expand syntax error recovery.
-- Implement ML-based multi-label vulnerability prediction.
-- Improve compiler-aware data-flow analysis.
-- Expand labeled vulnerability coverage.
-- Improve finding correlation and localization.
-- Add validated patch suggestions.
-- Compare the hybrid system with established security-analysis tools.
-- Evaluate on more diverse, previously unseen C code.
-PART B — MASTER AI IMPLEMENTATION PROMPT
-Instructions for the AI coding assistant
-
-The following section is a complete development specification. Copy it into the AI coding tool when you are ready to implement the planned features. Provide access to the actual repository or upload the project ZIP.
-16. Your Role
-Act as a senior software engineer, compiler engineer, machine-learning engineer, application security specialist, and UI/UX developer.
-
-Work on my existing SecureCompile project. Do not create an unrelated demo, replace the project with a generic scanner, or rebuild the application from scratch.
-
-Inspect the repository before editing files. Use the README as the specification, but verify all current functionality against the actual source code.
-17. Repository Inspection
-Before modifying anything:
-1. Inspect the complete project structure.
-2. Identify the Python version and dependencies.
-3. Inspect Flask routes and request/response handling.
-4. Inspect templates, stylesheets, and JavaScript.
-5. Inspect lexer tokens, parser grammar, AST nodes, semantic analysis, and symbol table.
-6. Inspect all security rules and source-level heuristic checks.
-7. Inspect tests, evaluation scripts, and reports.
-8. Identify duplicate findings, parser conflicts, broken routes, and other bugs.
-9. Check Git status and uncommitted changes.
-10. Run the existing tests when possible and record actual results.
-Then provide a short architecture summary, confirmed issues, missing features, and an implementation plan with the files expected to change.
-
-Do not overwrite working files without understanding their dependencies.
-18. Stabilize the Existing Website
-Preserve the existing Flask application and its visual direction.
-
-Fix genuine bugs, broken routes, invalid responses, duplicate findings, and frontend/backend integration problems. Keep the current working functionality.
-
-Make the website usable for source-code submission, scanning, findings inspection, filtering, explanations, and report viewing.
-
-Use clear loading, empty, warning, success, and error states. Ensure controls perform real actions.
-19. Implement Syntax Error Recovery
-Modify the existing parser to recover from common syntax mistakes, particularly missing semicolons.
-
-Requirements:
-- Report syntax diagnostics with source locations where available.
-- Continue parsing unaffected statements.
-- Run source-level fallback checks against the original source when parsing fails.
-- Separate syntax diagnostics from security findings.
-- Preserve the original source.
-- Show proposed repairs without silently applying them.
-- Mark uncertain findings when parsing is incomplete.
-- Test recovery against multiple errors and malformed statements.
-Inspect the existing PLY parser's recovery mechanisms before changing the grammar. Do not attempt arbitrary repair with unrestricted regular expressions.
-20. Improve C Language Support
-Document the existing parser's capabilities and limitations.
-
-Aim for broad, standards-aware C support. Evaluate whether integrating Clang as an optional or primary frontend would improve parsing, type information, diagnostics, and source locations while preserving the custom security-analysis components.
-
-Implement and test improvements incrementally.
-
-Do not claim complete C support until verified against appropriate conformance tests. If Clang is unavailable, document the fallback and do not claim that Clang diagnostics were produced.
-21. Implement a Genuine ML Model
-Research and select a suitable labeled C-code vulnerability dataset. Verify its source, license, labels, availability, and preprocessing requirements.
-
-Build a reproducible multi-label classifier using a justified baseline, such as TF-IDF/code-token features with scikit-learn.
-
-The implementation must include:
-- Dataset preparation.
-- Reproducible training.
-- Separate training, validation, and held-out test data.
-- Protection against duplicate and near-duplicate data leakage.
-- Model and preprocessing serialization.
-- A separate inference module.
-- Category-specific predictions and validation-selected thresholds.
-- Error handling for empty input and model-loading failures.
-- Evaluation scripts and actual reported results.
-Compare text-based features with compiler-derived features where practical.
-
-Do not call keyword matching ML. Do not fabricate training results, performance metrics, or dataset details. If the dataset cannot be obtained, build the pipeline and document how to obtain it without claiming that training has completed.
-22. Integrate Rule-Based and ML Analysis
-Create a unified finding schema and correlation layer.
-
-Combine findings from the parser, semantic analyzer, existing security rules, source-level checks, ML predictions, and optional external compiler diagnostics where available.
-
-For each finding, show the category, severity, evidence, supported source location, detection engine, explanation, and uncertainty.
-
-Include ML confidence only for ML-originated predictions.
-
-Deduplicate only findings that represent the same underlying issue. Preserve distinct vulnerabilities and their evidence.
-
-When the engines disagree, show the disagreement for review rather than automatically trusting the ML model.
-23. Improve Explanations and Fix Suggestions
-Explain what was detected, why it may be unsafe, what evidence supports it, and how it could be corrected.
-
-Offer proposed fixes or before/after comparisons where appropriate.
-
-Never silently change the original source. If AI is used to generate a patch, validate it with suitable checks and tests before describing it as verified.
-24. Implement Functional Code Correction: Detect → Explain → Fix → Validate
-This is a required product feature, not merely a future-work note or a visual mockup.
-
-Implement both:
-- Fix This Issue for an individual finding when a meaningful correction can be proposed.
-- Generate Corrected Code for the complete submitted C program.
-Requirements:
-1. Preserve the exact original source throughout the workflow.
-2. Generate a proposed patch/correction without silently overwriting the user's code.
-3. Show an original-versus-proposed diff and explain every meaningful change.
-4. Use deterministic transformations for safe, well-defined fixes. Use templates or AI-assisted generation only when appropriate and available.
-5. Do not use an ML category prediction alone to decide a repair. Use the finding evidence, relevant source context, and an explicit remediation strategy.
-6. Do not invent intended values or change program behavior without explaining the assumption. If the correct behavior is unclear, mark the issue as requiring developer review and explain why.
-7. Validate proposed code by running available parser and semantic checks, actual compiler diagnostics when a compiler is installed and invoked, relevant regression tests where practical, and a fresh security scan.
-8. Display Passed, Failed, or Unable to verify, together with the specific checks that ran and their outcomes. Do not claim a compiler or test ran when it did not.
-9. Show newly introduced errors or security findings. Let the user reject the patch or restore the original source.
-10. Add tests for individual fixes, full-program correction, multiple findings, invalid/unavailable fixes, preservation of original code, validation failure, and newly introduced findings.
-11. Never execute potentially malicious submitted programs as part of normal static analysis. If dynamic testing is ever added, it must be isolated and safely sandboxed.
-12. Treat validation as evidence, not a guarantee of correctness or complete security.
-Implement this as a real backend workflow connected to the existing analysis modules and frontend controls. Do not fabricate successful validation results or use hardcoded demo corrections.
-25. Implement Website Integration
-Integrate the new features into the existing Flask backend and frontend.
-
-The website should display syntax diagnostics separately from security findings, support multiple findings, show engine provenance, provide useful filters, and present ML predictions with uncertainty.
-
-Connect every new control to real functionality. Use measured evaluation results instead of hardcoded metrics.
-
-Validate input, handle oversized or malformed requests, and ensure ML inference failures do not crash the application.
-
-Do not execute potentially malicious source code during normal static analysis.
-26. Evaluate the System Honestly
-Compare three configurations on the same appropriately held-out dataset:
-1. Rule-based analysis only.
-2. ML-based analysis only.
-3. Combined hybrid analysis.
-Report per-category precision, recall, F1-score, false positives, false negatives, relevant aggregate metrics, dataset details, and data-splitting methodology.
-
-Define how findings are matched to ground truth. Distinguish vulnerability detection from exact source localization.
-
-Do not claim perfect accuracy or real-world performance based on a small predefined regression set.
-27. Add Regression Tests
-Preserve existing tests and add coverage for:
-- Safe programs.
-- Single and multiple vulnerabilities.
-- Duplicate findings.
-- Missing semicolons.
-- Multiple syntax errors.
-- Severely malformed code.
-- Unsupported C constructs.
-- Empty input.
-- Unseen ML examples.
-- Model-loading and inference failures.
-- Flask routes and invalid requests.
-- Correct report serialization.
-- Suggested fixes that preserve original code.
-Run the relevant tests after each major change and fix regressions before proceeding.
-
-Never claim tests passed if they were not executed.
-28. Update Dependencies and Documentation
-Adapt the repository structure to the actual project. Add new modules only where justified.
-
-Update requirements.txt, README.md, and .gitignore.
-
-Keep virtual environments, secrets, Python caches, and unnecessary datasets out of Git.
-
-Provide exact Windows PowerShell commands for setup, training, evaluation, testing, and running the website. Provide Ubuntu equivalents if useful.
-
-Update the README after implementation so it describes actual functionality, dataset licensing, measured results, limitations, and remaining work.
-29. Work in Verifiable Stages
-Implement the project in this order:
-1. Repository inspection and baseline testing.
-2. Stabilize existing functionality.
-3. Implement syntax error recovery and source-level fallback.
-4. Prepare the dataset and train the first ML baseline.
-5. Evaluate ML and compare it with rule-only analysis.
-6. Integrate ML inference and finding deduplication.
-7. Implement the functional code-correction workflow and validation status.
-8. Improve the UI, explanations, diffs, and reports.
-9. Add regression tests and compare all three analysis configurations.
-10. Update documentation and dependencies.
-11. Perform final end-to-end verification.
-Before each major stage, explain which files will change and why. After each stage, run the relevant tests, report actual results, and fix regressions before proceeding.
-
-If an operation is blocked by missing data, dependencies, external tools, network access, or permissions, explain the limitation and provide a practical alternative.
-30. Final Acceptance Criteria
-The implementation should be considered ready for review only when:
-- The existing website starts successfully.
-- Existing functionality remains available.
-- Syntax diagnostics and security findings are distinct.
-- Common missing-semicolon cases recover where possible.
-- Later statements remain analyzable after recoverable errors.
-- A genuine trained multi-label ML model can be loaded and used.
-- Rule findings and ML predictions are distinguishable.
-- Multiple distinct vulnerabilities can be displayed in one scan.
-- Duplicate findings are controlled without suppressing different risks.
-- Reports preserve evidence and supported source locations.
-- Individual-finding fixes and whole-program corrected-code proposals work where a meaningful fix can be proposed.
-- Proposed corrections show a diff, explain changes, preserve original code, and can be rejected/restored.
-- Post-fix validation status reflects checks actually executed and never fabricates success.
-- Rule-only, ML-only, and combined evaluation is reproducible.
-- Existing and new tests have been executed and their results documented.
-- The README and setup commands match the actual implementation.
-- No unsupported claims or invented metrics remain.
-Begin by inspecting the existing repository, running the baseline tests, and presenting a concise implementation plan. Then implement and verify the project in stages.
-Final Project Goal
-SecureCompile aims to combine compiler design, syntax error recovery, static security rules, ML-assisted multi-vulnerability prediction, explainable findings, and guided remediation into one functional web application.
-
-The goal is not merely to label code as safe or unsafe. It is to help developers understand potential risks, inspect supporting evidence, and improve their code through an explainable and measurable analysis workflow.
-
-The project status, supported C features, and ML performance must always reflect what has actually been implemented and tested.
-
-SecureCompile — Final Master AI Implementation Prompt
-Copy this entire prompt into your AI coding assistant and provide access to the actual SecureCompile repository or upload the project ZIP. The assistant must inspect the existing code before changing anything and must report only verified results.
-PART B — MASTER AI IMPLEMENTATION PROMPT
-Instructions for the AI coding assistant
-
-The following section is a complete development specification. Copy it into the AI coding tool when you are ready to implement the planned features. Provide access to the actual repository or upload the project ZIP.
-16. Your Role
-Act as a senior software engineer, compiler engineer, machine-learning engineer, application security specialist, and UI/UX developer.
-
-Work on my existing SecureCompile project. Do not create an unrelated demo, replace the project with a generic scanner, or rebuild the application from scratch.
-
-Inspect the repository before editing files. Use the README as the specification, but verify all current functionality against the actual source code.
-17. Repository Inspection
-Before modifying anything:
-1. Inspect the complete project structure.
-2. Identify the Python version and dependencies.
-3. Inspect Flask routes and request/response handling.
-4. Inspect templates, stylesheets, and JavaScript.
-5. Inspect lexer tokens, parser grammar, AST nodes, semantic analysis, and symbol table.
-6. Inspect all security rules and source-level heuristic checks.
-7. Inspect tests, evaluation scripts, and reports.
-8. Identify duplicate findings, parser conflicts, broken routes, and other bugs.
-9. Check Git status and uncommitted changes.
-10. Run the existing tests when possible and record actual results.
-Then provide a short architecture summary, confirmed issues, missing features, and an implementation plan with the files expected to change.
-
-Do not overwrite working files without understanding their dependencies.
-18. Stabilize the Existing Website
-Preserve the existing Flask application and its visual direction.
-
-Fix genuine bugs, broken routes, invalid responses, duplicate findings, and frontend/backend integration problems. Keep the current working functionality.
-
-Make the website usable for source-code submission, scanning, findings inspection, filtering, explanations, and report viewing.
-
-Use clear loading, empty, warning, success, and error states. Ensure controls perform real actions.
-19. Implement Syntax Error Recovery
-Modify the existing parser to recover from common syntax mistakes, particularly missing semicolons.
-
-Requirements:
-- Report syntax diagnostics with source locations where available.
-- Continue parsing unaffected statements.
-- Run source-level fallback checks against the original source when parsing fails.
-- Separate syntax diagnostics from security findings.
-- Preserve the original source.
-- Show proposed repairs without silently applying them.
-- Mark uncertain findings when parsing is incomplete.
-- Test recovery against multiple errors and malformed statements.
-Inspect the existing PLY parser's recovery mechanisms before changing the grammar. Do not attempt arbitrary repair with unrestricted regular expressions.
-20. Improve C Language Support
-Document the existing parser's capabilities and limitations.
-
-Aim for broad, standards-aware C support. Evaluate whether integrating Clang as an optional or primary frontend would improve parsing, type information, diagnostics, and source locations while preserving the custom security-analysis components.
-
-Implement and test improvements incrementally.
-
-Do not claim complete C support until verified against appropriate conformance tests. If Clang is unavailable, document the fallback and do not claim that Clang diagnostics were produced.
-21. Implement a Genuine ML Model
-Research and select a suitable labeled C-code vulnerability dataset. Verify its source, license, labels, availability, and preprocessing requirements.
-
-Build a reproducible multi-label classifier using a justified baseline, such as TF-IDF/code-token features with scikit-learn.
-
-The implementation must include:
-- Dataset preparation.
-- Reproducible training.
-- Separate training, validation, and held-out test data.
-- Protection against duplicate and near-duplicate data leakage.
-- Model and preprocessing serialization.
-- A separate inference module.
-- Category-specific predictions and validation-selected thresholds.
-- Error handling for empty input and model-loading failures.
-- Evaluation scripts and actual reported results.
-Compare text-based features with compiler-derived features where practical.
-
-Do not call keyword matching ML. Do not fabricate training results, performance metrics, or dataset details. If the dataset cannot be obtained, build the pipeline and document how to obtain it without claiming that training has completed.
-22. Integrate Rule-Based and ML Analysis
-Create a unified finding schema and correlation layer.
-
-Combine findings from the parser, semantic analyzer, existing security rules, source-level checks, ML predictions, and optional external compiler diagnostics where available.
-
-For each finding, show the category, severity, evidence, supported source location, detection engine, explanation, and uncertainty.
-
-Include ML confidence only for ML-originated predictions.
-
-Deduplicate only findings that represent the same underlying issue. Preserve distinct vulnerabilities and their evidence.
-
-When the engines disagree, show the disagreement for review rather than automatically trusting the ML model.
-23. Improve Explanations and Fix Suggestions
-Explain what was detected, why it may be unsafe, what evidence supports it, and how it could be corrected.
-
-Offer proposed fixes or before/after comparisons where appropriate.
-
-Never silently change the original source. If AI is used to generate a patch, validate it with suitable checks and tests before describing it as verified.
-24. Implement Functional Code Correction: Detect → Explain → Fix → Validate
-This is a required product feature, not merely a future-work note or a visual mockup.
-
-Implement both:
-- Fix This Issue for an individual finding when a meaningful correction can be proposed.
-- Generate Corrected Code for the complete submitted C program.
-Requirements:
-1. Preserve the exact original source throughout the workflow.
-2. Generate a proposed patch/correction without silently overwriting the user's code.
-3. Show an original-versus-proposed diff and explain every meaningful change.
-4. Use deterministic transformations for safe, well-defined fixes. Use templates or AI-assisted generation only when appropriate and available.
-5. Do not use an ML category prediction alone to decide a repair. Use the finding evidence, relevant source context, and an explicit remediation strategy.
-6. Do not invent intended values or change program behavior without explaining the assumption. If the correct behavior is unclear, mark the issue as requiring developer review and explain why.
-7. Validate proposed code by running available parser and semantic checks, actual compiler diagnostics when a compiler is installed and invoked, relevant regression tests where practical, and a fresh security scan.
-8. Display Passed, Failed, or Unable to verify, together with the specific checks that ran and their outcomes. Do not claim a compiler or test ran when it did not.
-9. Show newly introduced errors or security findings. Let the user reject the patch or restore the original source.
-10. Add tests for individual fixes, full-program correction, multiple findings, invalid/unavailable fixes, preservation of original code, validation failure, and newly introduced findings.
-11. Never execute potentially malicious submitted programs as part of normal static analysis. If dynamic testing is ever added, it must be isolated and safely sandboxed.
-12. Treat validation as evidence, not a guarantee of correctness or complete security.
-Implement this as a real backend workflow connected to the existing analysis modules and frontend controls. Do not fabricate successful validation results or use hardcoded demo corrections.
-25. Implement Website Integration
-Integrate the new features into the existing Flask backend and frontend.
-
-The website should display syntax diagnostics separately from security findings, support multiple findings, show engine provenance, provide useful filters, and present ML predictions with uncertainty.
-
-Connect every new control to real functionality. Use measured evaluation results instead of hardcoded metrics.
-
-Validate input, handle oversized or malformed requests, and ensure ML inference failures do not crash the application.
-
-Do not execute potentially malicious source code during normal static analysis.
-26. Evaluate the System Honestly
-Compare three configurations on the same appropriately held-out dataset:
-1. Rule-based analysis only.
-2. ML-based analysis only.
-3. Combined hybrid analysis.
-Report per-category precision, recall, F1-score, false positives, false negatives, relevant aggregate metrics, dataset details, and data-splitting methodology.
-
-Define how findings are matched to ground truth. Distinguish vulnerability detection from exact source localization.
-
-Do not claim perfect accuracy or real-world performance based on a small predefined regression set.
-27. Add Regression Tests
-Preserve existing tests and add coverage for:
-- Safe programs.
-- Single and multiple vulnerabilities.
-- Duplicate findings.
-- Missing semicolons.
-- Multiple syntax errors.
-- Severely malformed code.
-- Unsupported C constructs.
-- Empty input.
-- Unseen ML examples.
-- Model-loading and inference failures.
-- Flask routes and invalid requests.
-- Correct report serialization.
-- Suggested fixes that preserve original code.
-Run the relevant tests after each major change and fix regressions before proceeding.
-
-Never claim tests passed if they were not executed.
-28. Update Dependencies and Documentation
-Adapt the repository structure to the actual project. Add new modules only where justified.
-
-Update requirements.txt, README.md, and .gitignore.
-
-Keep virtual environments, secrets, Python caches, and unnecessary datasets out of Git.
-
-Provide exact Windows PowerShell commands for setup, training, evaluation, testing, and running the website. Provide Ubuntu equivalents if useful.
-
-Update the README after implementation so it describes actual functionality, dataset licensing, measured results, limitations, and remaining work.
-29. Work in Verifiable Stages
-Implement the project in this order:
-1. Repository inspection and baseline testing.
-2. Stabilize existing functionality.
-3. Implement syntax error recovery and source-level fallback.
-4. Prepare the dataset and train the first ML baseline.
-5. Evaluate ML and compare it with rule-only analysis.
-6. Integrate ML inference and finding deduplication.
-7. Implement the functional code-correction workflow and validation status.
-8. Improve the UI, explanations, diffs, and reports.
-9. Add regression tests and compare all three analysis configurations.
-10. Update documentation and dependencies.
-11. Perform final end-to-end verification.
-Before each major stage, explain which files will change and why. After each stage, run the relevant tests, report actual results, and fix regressions before proceeding.
-
-If an operation is blocked by missing data, dependencies, external tools, network access, or permissions, explain the limitation and provide a practical alternative.
-30. Final Acceptance Criteria
-The implementation should be considered ready for review only when:
-- The existing website starts successfully.
-- Existing functionality remains available.
-- Syntax diagnostics and security findings are distinct.
-- Common missing-semicolon cases recover where possible.
-- Later statements remain analyzable after recoverable errors.
-- A genuine trained multi-label ML model can be loaded and used.
-- Rule findings and ML predictions are distinguishable.
-- Multiple distinct vulnerabilities can be displayed in one scan.
-- Duplicate findings are controlled without suppressing different risks.
-- Reports preserve evidence and supported source locations.
-- Individual-finding fixes and whole-program corrected-code proposals work where a meaningful fix can be proposed.
-- Proposed corrections show a diff, explain changes, preserve original code, and can be rejected/restored.
-- Post-fix validation status reflects checks actually executed and never fabricates success.
-- Rule-only, ML-only, and combined evaluation is reproducible.
-- Existing and new tests have been executed and their results documented.
-- The README and setup commands match the actual implementation.
-- No unsupported claims or invented metrics remain.
-Begin by inspecting the existing repository, running the baseline tests, and presenting a concise implementation plan. Then implement and verify the project in stages.
-Final Project Goal
-SecureCompile aims to combine compiler design, syntax error recovery, static security rules, ML-assisted multi-vulnerability prediction, explainable findings, and guided remediation into one functional web application.
-
-The goal is not merely to label code as safe or unsafe. It is to help developers understand potential risks, inspect supporting evidence, and improve their code through an explainable and measurable analysis workflow.
-
-The project status, supported C features, and ML performance must always reflect what has actually been implemented and tested.
+pip install -r requirements.txt
+python app.py            # http://127.0.0.1:5000
+```
+Ubuntu: `python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && python app.py`
+
+Compiler diagnostics need `gcc`, `clang` or `cc` on PATH (this project was tested with MinGW GCC 6.3; **Clang was not available**, so no Clang results exist). Without one, the app says so and skips those checks.
+
+### Train and evaluate the ML model
+The app works without a model (the UI reports "ML unavailable"). To reproduce:
+```powershell
+python src/ml/dataset.py download   # 153 MB NIST Juliet 1.3 archive -> data/raw (git-ignored)
+python src/ml/dataset.py prepare    # extraction, dedup, grouped split (~6 min first time)
+python src/ml/train.py              # ~8 min; writes models/ (git-ignored)
+python src/ml/evaluate.py           # ~1.5 min; writes reports/ml_evaluation.{json,md}
+```
+
+### Tests
+```powershell
+pip install -r requirements-dev.txt
+python -m pytest tests -q            # 91 passed on the last run (see below)
+python tests/ui_smoke.py             # browser end-to-end test (needs Chrome or Edge); all checks passed on the last run
+python src/test_all.py; python src/test_control_flow.py; python src/test_extended_source.py   # original script tests, unchanged
+python src/evaluate_dataset.py       # original 20-case regression set (12 TP / 8 TN, 0 FP / 0 FN)
+```
+`tests/test_ml.py` skips model-dependent tests when no model has been trained; the skip is reported by pytest.
+
+## ML model and evaluation (measured)
+
+**Dataset:** [NIST SARD Juliet C/C++ 1.3](https://samate.nist.gov/SARD/test-suites/112). The site states it is "not subject to copyright protection and is in the public domain", with CC0 1.0 for foreign rights. The zip itself contains no license file. Only narrow-char C files for 19 CWEs that map to the model's 11 categories were used; Windows/wide-char variants and unmapped CWEs were excluded. Labels come from the CWE directory plus Juliet's `bad`/`good` function naming (so helper functions such as `badSource` are labelled vulnerable, which adds label noise; functions with identical normalised text but different labels, 22,667 of them, were dropped).
+
+**Split and leakage control:** 97,872 functions extracted; grouped by Juliet test case (all flow variants of one CWE/source/sink stay in one split), stratified by CWE; 43,149 exact duplicates and (validation/test only) 805/914 near-duplicates (TF-IDF cosine ≥ 0.95 to a training sample) removed. Final: 23,770 train / 3,409 validation / 3,158 test, no group or text shared between splits. The split seed (1338) was the first one in which every category had ≥ 15 positives in validation and test (seed 1337 left `format-string` with 0 test positives); this rule used only data counts. Comments and label-leaking identifiers (`*bad*`, `*good*`, `CWE…`) are removed before featurisation.
+
+**Features compared** (test micro-F1 / macro-F1; selection used validation only): text TF-IDF 0.946 / 0.808, lexer-derived "structure" tokens 0.962 / 0.780, combined 0.959 / 0.853 (selected on validation, C=10). "Structure" means a token-class abstraction of this project's own lexer output; it is **not** compiler IR (no Clang/GCC AST features were used).
+
+**Ground truth and matching:** a function's label set is its CWE's categories if it is a Juliet `bad` function, else empty. A configuration scores a TP for a category that it reports and the label set contains. This is *detection*, not localisation. Localisation is measured separately for rules only (the ML model has no line output): 153 of 156 detected flaws with Juliet `FLAW` annotations were reported within ±2 lines.
+
+**Configurations compared on the same test set** (hybrid = union of rule and ML categories, chosen over intersection on validation; micro-F1 95% CI by bootstrapping test-case groups):
+
+| Configuration | Micro F1 | 95% CI | Macro F1 |
+|---|---|---|---|
+| Rule-based only | 0.170 | 0.086–0.267 | 0.264 |
+| ML only | 0.959 | 0.925–0.986 | 0.853 |
+| Hybrid (union) | 0.845 | 0.773–0.917 | 0.809 |
+
+Per-category test results (precision/recall/F1, then false positives and false negatives; `n/a` = undefined because nothing was predicted):
+
+| Category | Support | Rule P/R/F1 (FP,FN) | ML P/R/F1 (FP,FN) | Hybrid P/R/F1 (FP,FN) |
+|---|---|---|---|---|
+| buffer-overflow | 404 | 0.27/0.16/0.20 (171,340) | 1.00/0.98/0.99 (1,10) | 0.70/0.98/0.81 (172,10) |
+| format-string | 42 | 1.00/0.50/0.67 (0,21) | 1.00/0.98/0.99 (0,1) | 1.00/0.98/0.99 (0,1) |
+| integer-overflow | 441 | n/a/0.00/0.00 (0,441) | 1.00/0.98/0.99 (0,10) | 1.00/0.98/0.99 (0,10) |
+| divide-by-zero | 56 | n/a/0.00/0.00 (0,56) | 0.98/0.91/0.94 (1,5) | 0.98/0.91/0.94 (1,5) |
+| null-pointer-dereference | 18 | 0.00/0.00/0.00 (18,18) | 0.50/1.00/0.67 (18,0) | 0.33/1.00/0.50 (36,0) |
+| double-free | 29 | 0.74/0.59/0.65 (6,12) | 1.00/0.59/0.74 (0,12) | 0.74/0.59/0.65 (6,12) |
+| use-after-free | 19 | 0.68/0.89/0.77 (8,2) | 1.00/0.16/0.27 (0,16) | 0.69/0.95/0.80 (8,1) |
+| memory-leak | 75 | 0.00/0.00/0.00 (110,75) | 1.00/1.00/1.00 (0,0) | 0.41/1.00/0.58 (110,0) |
+| uninitialized-variable | 72 | 1.00/0.22/0.36 (0,56) | 1.00/0.78/0.88 (0,16) | 1.00/0.99/0.99 (0,1) |
+| command-injection | 63 | n/a/0.00/0.00 (0,63) | 1.00/1.00/1.00 (0,0) | 1.00/1.00/1.00 (0,0) |
+| invalid-free | 78 | 0.22/0.27/0.24 (74,57) | 0.85/1.00/0.92 (14,0) | 0.47/1.00/0.64 (87,0) |
+
+### What these numbers do and do not mean
+- **Juliet is synthetic and templated.** High ML scores here do not estimate real-world performance. Several categories have small test support (e.g. 18 NULL-dereference, 19 use-after-free functions), so per-category figures are noisy.
+- **Out-of-distribution check (n=10, tiny):** on the project's 10 hand-written in-scope vulnerable snippets (e.g. `char buf[10]; gets(buf);`), the ML model flagged the expected category in **0**; the rules flagged **10** (but those rules were written for those snippets, so that is optimistic). The model also flags the bundled "safe" `fgets` example as `buffer-overflow` (p≈0.65), shown in the UI as an ML-only lead with high uncertainty.
+- **`use-after-free` had validation F1 = 0.0** (held-out validation group); on test its recall is 0.16.
+- The rules score poorly on Juliet partly because of how Juliet is written (e.g. `system` hidden behind macros, allocation split across files), not only because the rules are weak; they were not tuned on this data.
+- On synthetic multi-vulnerability files (400 files built by concatenating 2–3 vulnerable test functions plus a safe one): micro-F1 rule 0.34, ML 0.86, union hybrid 0.84; exact-match 3%, 54%, 49%. This only exercises the file-level code path.
+- Because rule false positives accumulate, the union hybrid is *worse* than ML-only on Juliet. The app still shows both engines side by side because the ML model is not a safe sole authority outside Juliet.
+
+Full output: `reports/ml_evaluation.md` / `.json`.
+
+## Parser: supported C and known limits
+The grammar covers: scalar/pointer/array declarations (including multiple declarators, initialisers, `const`/`unsigned`/`long long`/`struct X` type words), function definitions/prototypes with `(void)`, assignments incl. compound, `if`/`else if`/`while`/`for`, `return`/`break`/`continue`, calls, casts, `sizeof`, `&`/`*`, member access in expressions, hex/suffixed numbers.
+**Not supported** (reported as diagnostics, text-pattern checks still run): `switch`/`case`, `do…while`, `goto`, ternary `?:`, assignment as an expression, struct/union/enum/typedef definitions, function pointers, assignments to members (`p->x = 1`), designated initialisers, preprocessor semantics (directives are skipped). Full C conformance is **not** claimed and was not tested against a conformance suite. Clang integration as a primary front end was evaluated conceptually but not implemented (none installed here); GCC/Clang is used only for `-fsyntax-only` diagnostics.
+
+## Other known limitations / remaining work
+- Text-pattern rules are regex heuristics: no aliasing, path sensitivity or inter-procedural reasoning. Many are low confidence and the UI says so.
+- Fixes cover only the rules listed above; behaviour changes (e.g. truncation) are stated as assumptions but are not tested by running the program.
+- No dynamic sandboxed testing exists. Real-world C vulnerability data (e.g. DiverseVul, Big-Vul) was not used; adding it would be the main route to a more credible model.
+- Dataset and model files are git-ignored; a fresh clone shows "ML unavailable" until trained.
+- `src/*_backup*` files are leftovers from earlier work and are unused.

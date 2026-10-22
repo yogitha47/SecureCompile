@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SecureCompile | C Security Analyzer</title>
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -13,40 +14,71 @@
   </header>
   <main class="page">
     <section class="hero">
-      <div class="eyebrow"><span class="dot"></span> BEGINNER-FRIENDLY CODE REVIEW</div>
+      <div class="eyebrow"><span class="dot"></span> DETECT · EXPLAIN · FIX · VALIDATE</div>
       <h1>Find risky code.<br><span>Understand how to fix it.</span></h1>
-      <p>Analyze C source with compiler diagnostics when Clang/GCC is installed, plus SecureCompile security heuristics and beginner-friendly explanations.</p>
+      <p>Syntax-error recovery, rule-based checks, an optional trained ML model and compiler diagnostics, with every finding showing which engine reported it and how sure it is.</p>
     </section>
     <section class="workspace">
       <div class="editor-card">
-        <div class="card-heading"><div><h2>Your C code</h2><p>Analysis runs locally on this computer.</p></div><label class="upload-button" for="fileInput">↑ Upload .c</label></div>
+        <div class="card-heading"><div><h2>Your C code</h2><p>Analysis runs locally on this computer. Submitted code is never executed.</p></div><label class="upload-button" for="fileInput">↑ Upload .c</label></div>
         <form id="analyzeForm">
           <input id="fileInput" type="file" accept=".c,text/plain" hidden>
-          <div class="editor-toolbar"><span><i></i> main.c</span><span id="charCount">0 characters</span></div>
-          <textarea id="codeInput" spellcheck="false" placeholder="int x = 10;\nint y = 0;\nint result = x / y;" aria-label="C source code"></textarea>
-          <div class="editor-actions"><button class="secondary" type="button" id="sampleButton">Load example</button><div class="action-group"><button class="secondary" type="button" id="shareButton">Share code</button><button class="primary" id="analyzeButton" type="submit">Analyze code <span>→</span></button></div></div><p id="shareStatus" class="micro-status" aria-live="polite"></p>
+          <div class="editor-toolbar"><span><i></i> <span id="fileLabel">main.c</span></span><span id="charCount">0 characters</span></div>
+          <textarea id="codeInput" spellcheck="false" placeholder="int x = 10;&#10;int y = 0;&#10;int result = x / y;" aria-label="C source code"></textarea>
+          <div class="editor-actions">
+            <div class="action-group">
+              <select id="exampleSelect" class="select-input" aria-label="Load an example">
+                <option value="">Load example…</option>
+                <option value="vulnerable">Several vulnerabilities</option>
+                <option value="syntax">Missing semicolons</option>
+                <option value="safe">Safe program</option>
+              </select>
+              <button class="secondary" type="button" id="restoreButton" hidden>Restore original</button>
+            </div>
+            <div class="action-group"><button class="secondary" type="button" id="shareButton">Share code</button><button class="primary" id="analyzeButton" type="submit">Analyze code <span>→</span></button></div>
+          </div>
+          <p id="shareStatus" class="micro-status" aria-live="polite"></p>
         </form>
-        <p class="scope-note"><strong>Analysis layers:</strong> optional compiler syntax/type diagnostics + source-level security heuristics. The security checks are not a proof of safety; complex C semantics may still be missed.</p>
+        <p class="scope-note"><strong>Analysis layers:</strong> parser with error recovery, AST and text-pattern rules, an optional ML model, and compiler diagnostics when GCC/Clang is installed. Findings are leads for review, not proof; a clean result does not guarantee security.</p>
       </div>
       <div class="results-card" id="resultsCard">
         <div class="results-heading"><div><h2>Analysis results</h2><p id="resultSubtitle">Your findings will appear here.</p></div><span class="status-pill idle" id="statusPill">Waiting</span></div>
-        <div class="empty-state" id="emptyState"><div class="empty-icon">⌁</div><h3>Ready when you are</h3><p>Run an analysis to see security findings, affected lines and suggested fixes.</p></div>
-        <div id="errorBox" class="error-box" hidden></div>
+        <div class="empty-state" id="emptyState"><div class="empty-icon">⌁</div><h3>Ready when you are</h3><p>Run an analysis to see syntax diagnostics, security findings, evidence and fix proposals.</p></div>
+        <div id="loadingBox" class="loading-box" hidden><span class="spinner"></span> Analyzing…</div>
+        <div id="errorBox" class="error-box" role="alert" hidden></div>
+        <div id="engineStrip" class="engine-strip" hidden></div>
         <div id="summary" class="summary" hidden></div>
-        <div id="compilerPanel" class="compiler-panel" hidden></div><div id="findings" class="findings"></div><section id="memoryPanel" class="memory-panel" hidden><div class="panel-title"><div><h3>Memory &amp; pointer map</h3><p>Approximate source-based view; not a runtime simulation.</p></div></div><div id="memoryMap" class="memory-map"></div></section>
-        <button id="downloadButton" class="download-button" hidden>Download JSON report ↓</button>
-        <p class="disclaimer">A clean result means no issue was found by the implemented rules—not that the program is guaranteed secure.</p>
+        <section id="syntaxPanel" class="syntax-panel" hidden></section>
+        <section id="filterBar" class="filter-bar" hidden>
+          <div class="filter-row">
+            <input id="filterSearch" type="search" class="select-input" placeholder="Search findings…" aria-label="Search findings">
+            <select id="filterSeverity" class="select-input" aria-label="Severity filter"><option value="">All severities</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option></select>
+            <select id="filterCategory" class="select-input" aria-label="Category filter"><option value="">All categories</option></select>
+            <select id="filterEngine" class="select-input" aria-label="Engine filter"><option value="">All engines</option><option value="ast-rule">AST rules</option><option value="source-rule">Text-pattern rules</option><option value="ml">ML model</option></select>
+            <select id="filterReview" class="select-input" aria-label="Engine agreement filter"><option value="">Any agreement</option><option value="agreement">Rules and ML agree</option><option value="rule-only">Rule only (ML did not flag)</option><option value="ml-only">ML only (no rule evidence)</option></select>
+          </div>
+          <div class="filter-row"><label class="check"><input type="checkbox" id="filterUncertain"> Show only uncertain findings</label><span id="filterCount" class="micro-status"></span><button type="button" id="filterClear" class="text-button">Clear filters</button></div>
+        </section>
+        <div id="findings" class="findings"></div>
+        <section id="mlPanel" class="ml-panel" hidden></section>
+        <div id="compilerPanel" class="compiler-panel" hidden></div>
+        <section id="memoryPanel" class="memory-panel" hidden><div class="panel-title"><div><h3>Memory &amp; pointer map</h3><p>Approximate source-based view; not a runtime simulation.</p></div></div><div id="memoryMap" class="memory-map"></div></section>
+        <div class="results-actions" id="resultsActions" hidden>
+          <button id="fixAllButton" class="primary small" type="button">Generate corrected code</button>
+          <button id="downloadButton" class="download-button" type="button">Download JSON report ↓</button>
+        </div>
+        <p class="disclaimer">A clean result means no issue was found by the implemented checks—not that the program is guaranteed secure.</p>
       </div>
     </section>
+    <section id="fixPanel" class="fix-panel" hidden aria-live="polite"></section>
     <section class="batch-card">
       <div><h2>Classroom / multi-file review</h2><p>Select several <code>.c</code> files to create a local summary. Files are analyzed in this browser session and are not saved to a server-side classroom database.</p></div>
       <div class="batch-controls"><input id="batchFiles" type="file" accept=".c,text/plain" multiple><button id="batchButton" class="secondary" type="button">Review selected files</button></div>
       <div id="batchResults" class="batch-results" hidden></div>
     </section>
-    <section class="feature-row">
-      <article><span class="feature-icon purple">⌕</span><div><h3>Clear explanations</h3><p>Understand why a code pattern may be risky.</p></div></article>
-      <article><span class="feature-icon blue">↳</span><div><h3>Line-level learning hints</h3><p>Jump to the affected line and review safe, rule-based fix guidance.</p></div></article>
-      <article><span class="feature-icon pink">⇩</span><div><h3>Portable report</h3><p>Export findings as JSON for project evaluation.</p></div></article>
+    <section class="batch-card" id="evalCard">
+      <div><h2>Measured evaluation</h2><p id="evalIntro">Loading evaluation results…</p></div>
+      <div id="evalBody" class="eval-body"></div>
     </section>
     <footer>SecureCompile · Academic static-analysis prototype </footer>
   </main>

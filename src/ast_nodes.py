@@ -218,3 +218,52 @@ class FunctionDefinition(ASTNode):
             f"name={self.name}, parameters={self.parameters}, "
             f"body={self.body})"
         )
+
+
+class PointerAssignment(ASTNode):
+    def __init__(self, name, value, line=None):
+        super().__init__(line)
+        self.name = name
+        self.value = value
+
+    def __repr__(self):
+        return f"PointerAssignment(name={self.name}, value={self.value})"
+
+
+class CastExpression(ASTNode):
+    def __init__(self, target_type, operand, line=None):
+        super().__init__(line)
+        self.target_type = target_type
+        self.operand = operand
+
+    def __repr__(self):
+        return f"CastExpression(type={self.target_type}, operand={self.operand})"
+
+
+class SizeofExpression(ASTNode):
+    def __init__(self, operand, line=None):
+        super().__init__(line)
+        self.operand = operand
+
+    def __repr__(self):
+        return f"SizeofExpression({self.operand})"
+
+
+class MemberAccess(ASTNode):
+    def __init__(self, base, member, arrow=False, line=None):
+        super().__init__(line)
+        self.base = base
+        self.member = member
+        self.arrow = arrow
+
+    def __repr__(self):
+        return f"MemberAccess(base={self.base}, member={self.member}, arrow={self.arrow})"
+
+
+class JumpStatement(ASTNode):
+    def __init__(self, kind, line=None):
+        super().__init__(line)
+        self.kind = kind
+
+    def __repr__(self):
+        return f"JumpStatement({self.kind})"

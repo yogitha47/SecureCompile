@@ -45,10 +45,21 @@ def _remove_comments(source: str) -> str:
     return "".join(out)
 
 
+class _Loc(int):
+    """A 1-based line number that also remembers its character offset."""
+    offset = None
+
+
+def _loc(code: str, offset: int) -> "_Loc":
+    loc = _Loc(code.count("\n", 0, offset) + 1)
+    loc.offset = offset
+    return loc
+
+
 def _finding(rule_id, category, severity, confidence, message, explanation, suggestion, line):
     return {"rule_id": rule_id, "type": category, "severity": severity,
             "confidence": confidence, "message": message, "explanation": explanation,
-            "suggestion": suggestion, "line": line}
+            "suggestion": suggestion, "line": int(line), "offset": getattr(line, "offset", None)}
 
 
 def analyze_source(source: str) -> list[dict]:
@@ -56,8 +67,8 @@ def analyze_source(source: str) -> list[dict]:
     findings = []
 
     def add_once(f):
-        key = (f["rule_id"], f.get("line"))
-        if not any((x["rule_id"], x.get("line")) == key for x in findings):
+        key = (f["rule_id"], f.get("line"), f.get("offset"))
+        if not any((x["rule_id"], x.get("line"), x.get("offset")) == key for x in findings):
             findings.append(f)
 
     # Existing unsafe APIs: source fallback works even when full functions/headers are present.
@@ -71,7 +82,7 @@ def analyze_source(source: str) -> list[dict]:
         for m in re.finditer(rf"\b{ name }\s*\(", code):
             add_once(_finding(rid, "Potentially Unsafe Function", "HIGH", "MEDIUM",
                               f"Potentially unsafe function '{name}' detected.", explanation, suggestion,
-                              code.count("\n", 0, m.start()) + 1))
+                              _loc(code, m.start())))
 
     # scanf %s with no field width. Handles ordinary literal formats.
     for m in re.finditer(r'\bscanf\s*\(\s*("(?:\\.|[^"\\])*"|[^,\n]+)', code):
@@ -81,7 +92,7 @@ def analyze_source(source: str) -> list[dict]:
                               "scanf() contains a %s conversion without a width limit.",
                               "Input may exceed the destination buffer because the string conversion has no maximum width.",
                               "Specify a field width smaller than the destination buffer capacity and check scanf()'s return value.",
-                              code.count("\n", 0, m.start()) + 1))
+                              _loc(code, m.start())))
 
     # printf(userValue) / fprintf(stream, userValue) / sprintf(buf, userValue).
     for name, index in (("printf", 0), ("fprintf", 1), ("sprintf", 1)):
@@ -92,7 +103,7 @@ def analyze_source(source: str) -> list[dict]:
                                   f"{name}() may use a non-literal format string.",
                                   "If the format argument is controlled by input, formatting directives may be interpreted.",
                                   'Use a fixed format string, for example printf("%s", value).',
-                                  code.count("\n", 0, m.start()) + 1))
+                                  _loc(code, m.start())))
 
     for m in re.finditer(r"\b(?:system|popen)\s*\(", code):
         name = re.search(r"\b(system|popen)\s*\(", m.group(0)).group(1)
@@ -100,7 +111,7 @@ def analyze_source(source: str) -> list[dict]:
                           f"Use of '{name}()' requires security review.",
                           "Shell command execution can be dangerous when command content includes untrusted data.",
                           "Avoid shell commands where possible; never concatenate untrusted input into a command.",
-                          code.count("\n", 0, m.start()) + 1))
+                          _loc(code, m.start())))
 
     # Scalar declaration followed by array indexing: common serious type/logic error.
     scalar_decl = re.compile(r"\b(?:char|short|int|long|float|double|unsigned|signed|bool)\s+(\w+)\s*(?:=\s*[^;]+)?;")
@@ -114,7 +125,7 @@ def analyze_source(source: str) -> list[dict]:
                               f"'{name}' is declared as a scalar but later indexed like an array.",
                               "A scalar object cannot be indexed with []. This is invalid C and can lead to incorrect memory access if the declaration was intended to be an array.",
                               f"If multiple values are required, declare a correctly sized array such as int {name}[6]; and verify every index is in range.",
-                              code.count("\n", 0, offset) + 1))
+                              _loc(code, offset)))
 
     # Pointer passed to free without a visible allocation/initialization before that free.
     ptr_decl = re.compile(r"\b(?:char|short|int|long|float|double|void|struct\s+\w+)\s*\*\s*(\w+)\s*(?:=\s*([^;]+))?;")
@@ -127,13 +138,18 @@ def analyze_source(source: str) -> list[dict]:
             continue
         before_free = code[dm.end():dm.end() + fm.start()]
         alloc = re.search(rf"\b{re.escape(name)}\s*=\s*(?:\([^;]*?\)\s*)?(?:malloc|calloc|realloc)\s*\(", before_free)
+        # free(NULL) is a defined no-op: a pointer initialised to NULL and never given another
+        # value before the free() is not a "free of unallocated memory".
+        reassigned = re.search(rf"\b{re.escape(name)}\s*=\s*(?!NULL\b|0\b)[^=]", before_free)
+        if not alloc and initializer in {"NULL", "0", "(void *)0"} and not reassigned:
+            continue
         if not alloc:
             offset = dm.end() + fm.start()
             add_once(_finding("SC-MEM-006", "Free Without Visible Allocation", "HIGH", "MEDIUM",
                               f"free({name}) is called, but no allocation for '{name}' is visible beforehand.",
                               "Freeing an uninitialized or non-allocated pointer has undefined behavior. This source-level check may not follow assignments across functions or complex control flow.",
                               f"Initialize {name} to NULL or assign it a valid malloc/calloc/realloc result before calling free(); only free pointers returned by allocation functions.",
-                              code.count("\n", 0, offset) + 1))
+                              _loc(code, offset)))
 
     
     # Literal zero divisors.
@@ -147,7 +163,7 @@ def analyze_source(source: str) -> list[dict]:
             "Modulo by zero detected." if is_mod else "Division by zero detected.",
             "The operation uses a literal zero divisor, which is invalid arithmetic in C.",
             "Check that the divisor is nonzero before performing the operation.",
-            code.count("\n", 0, m.start()) + 1
+            _loc(code, m.start())
         ))
 
     # Detect simple variables initialized to zero and used as divisors.
@@ -169,7 +185,7 @@ def analyze_source(source: str) -> list[dict]:
                 f"{'Modulo' if is_mod else 'Division'} uses variable '{name}', initialized to zero.",
                 "The divisor variable has a visible zero initializer. This heuristic does not track later assignments or complex control flow.",
                 f"Ensure '{name}' is nonzero before performing the operation.",
-                code.count("\n", 0, m.start()) + 1
+                _loc(code, m.start())
             ))
 
 
@@ -180,7 +196,7 @@ def analyze_source(source: str) -> list[dict]:
                           "Expression appears to cross a common 32-bit signed-int boundary.",
                           "Signed integer overflow is undefined behavior in C. The exact result depends on the expression's types and integer widths, which this heuristic does not infer.",
                           "Check the destination type and bounds; use a wider type or validate the operation before performing it.",
-                          code.count("\n", 0, m.start()) + 1))
+                          _loc(code, m.start())))
 
     # rand() without a visible srand() is a low-confidence quality/security note, not always a bug.
     rand_match = re.search(r"\brand\s*\(", code)
@@ -189,7 +205,7 @@ def analyze_source(source: str) -> list[dict]:
                           "rand() is used without a visible srand() call.",
                           "The pseudorandom sequence may repeat between runs on common C library implementations. rand() is not suitable for security-sensitive randomness even when seeded.",
                           "For non-security simulation, seed once if repeatability is not wanted. For security-sensitive values, use an operating-system cryptographic random source.",
-                          code.count("\n", 0, rand_match.start()) + 1))
+                          _loc(code, rand_match.start())))
 
     # Pointer and lifetime checks are intentionally conservative source heuristics.
     # They do not replace path-sensitive compiler analysis.
@@ -199,13 +215,17 @@ def analyze_source(source: str) -> list[dict]:
     for fm in all_free_calls:
         by_pointer.setdefault(fm.group(1), []).append(fm)
     for name, calls in by_pointer.items():
-        if len(calls) > 1:
-            second = calls[1]
+        # A second free() only counts if the pointer was not given a new value (NULL or a
+        # fresh allocation) after the previous free().
+        repeated = [b for a, b in zip(calls, calls[1:])
+                    if not re.search(rf"\b{re.escape(name)}\s*=[^=]", code[a.end():b.start()])]
+        if repeated:
+            second = repeated[0]
             add_once(_finding("SC-MEM-008", "Possible Double Free", "HIGH", "MEDIUM",
                               f"free({name}) appears more than once.",
                               "Calling free() repeatedly on the same allocation without an intervening new allocation can cause undefined behavior. This heuristic does not track branches or reassignment precisely.",
                               f"Ensure {name} is freed at most once for each allocation; set it to NULL after freeing and guard later cleanup paths.",
-                              code.count("\n", 0, second.start()) + 1))
+                              _loc(code, second.start())))
         first = calls[0]
         tail = code[first.end():]
         reassign = re.search(rf"\b{re.escape(name)}\s*=\s*(?!NULL\b|0\b)[^=]", tail)
@@ -216,7 +236,7 @@ def analyze_source(source: str) -> list[dict]:
                               f"'{name}' may be accessed after it is freed.",
                               "Using memory through a pointer after free() can access invalid memory. This source-level check does not fully model aliases or control flow.",
                               f"Do not use {name} after free(); set it to NULL after release and redesign ownership so the lifetime is clear.",
-                              code.count("\n", 0, offset) + 1))
+                              _loc(code, offset)))
 
     # Direct null-pointer dereference, for simple visible NULL assignments.
     null_assignments = list(re.finditer(r"\b(\w+)\s*=\s*(?:NULL|0)\s*;", code))
@@ -232,7 +252,7 @@ def analyze_source(source: str) -> list[dict]:
                                   f"'{name}' is dereferenced after being assigned NULL or 0.",
                                   "A null pointer does not refer to a valid object. Dereferencing it can crash or cause undefined behavior.",
                                   f"Check {name} against NULL before dereferencing it and ensure it points to a valid object.",
-                                  code.count("\n", 0, offset) + 1))
+                                  _loc(code, offset)))
 
     # Simple allocation leak heuristic: allocation assigned to a local pointer without visible free/return.
     alloc_re = re.compile(r"\b(?:\w+\s+)?\*\s*(\w+)\s*=\s*(?:\([^;]*?\)\s*)?(?:malloc|calloc|realloc)\s*\(")
@@ -247,7 +267,7 @@ def analyze_source(source: str) -> list[dict]:
                               f"Allocation assigned to '{name}' has no visible matching free().",
                               "Dynamically allocated memory should be released when ownership ends. This heuristic may miss frees in helper functions or other control-flow paths.",
                               f"Ensure every successful allocation assigned to {name} is released exactly once, or document and transfer ownership explicitly.",
-                              code.count("\n", 0, am.start()) + 1))
+                              _loc(code, am.start())))
 
     # Unmatched preprocessor conditional directives.
     pp_stack = []
@@ -298,13 +318,13 @@ def analyze_source(source: str) -> list[dict]:
             if stack and stack[-1][0] == closing[ch]:
                 stack.pop()
             else:
-                line_no = code.count("\n", 0, pos) + 1
+                line_no = _loc(code, pos)
                 add_once(_finding("SC-SYN-001", "Unmatched Closing Delimiter", "HIGH", "HIGH",
                                   f"Closing delimiter '{ch}' has no matching opener.",
                                   "Parentheses, square brackets and braces must be correctly paired in C source.",
                                   f"Check the matching opening delimiter before line {line_no}.", line_no))
     for ch, pos in stack:
-        line_no = code.count("\n", 0, pos) + 1
+        line_no = _loc(code, pos)
         add_once(_finding("SC-SYN-001", "Unclosed Delimiter", "HIGH", "HIGH",
                           f"Opening delimiter '{ch}' has no matching closing delimiter.",
                           "An unclosed grouping delimiter often causes a compiler syntax error or changes the structure of later code.",
@@ -318,7 +338,7 @@ def analyze_source(source: str) -> list[dict]:
             segment_end = cases[idx + 1].start()
             segment = body[case.end():segment_end]
             if segment.strip() and not re.search(r"\b(?:break|return|goto)\b|/\*\s*fall\s*through\s*\*/", segment):
-                line_no = code.count("\n", 0, sm.start(1) + case.start()) + 1
+                line_no = _loc(code, sm.start(1) + case.start())
                 add_once(_finding("SC-LOGIC-004", "Possible Switch Fall-through", "LOW", "LOW",
                                   "A switch case may fall through into the next case.",
                                   "Without break, return or another control transfer, execution can continue into the following case. Some programs intentionally use fall-through.",

@@ -1,0 +1,1450 @@
+{
+  "dataset": {
+    "name": "NIST Juliet C/C++ 1.3 (function level)",
+    "license": "Public domain / CC0 for foreign rights, per NIST SARD",
+    "split_seed": 1338,
+    "test_groups": 68,
+    "train_samples": 23770,
+    "validation_samples": 3409
+  },
+  "methodology": {
+    "split": "Grouped by Juliet test case (all flow variants of one CWE/data-source/sink stay together), stratified by CWE; exact-duplicate and near-duplicate (TF-IDF cosine >= 0.95) validation/test samples against training were removed.",
+    "ground_truth": "Function-level category labels from CWE directory + Juliet bad/good naming; detection is scored per category per function. Localisation is scored separately for rules only.",
+    "model_selection": "Feature set, C and per-category thresholds were chosen on the validation split only.",
+    "hybrid_policy_selection": {
+      "union": 0.8684,
+      "intersection": 0.1606
+    },
+    "caveats": [
+      "Juliet is synthetic and highly templated; these numbers do not estimate real-world performance.",
+      "Several categories have small test support (see 'support'); intervals are wide.",
+      "Rule thresholds were not tuned on this data; the rules were written before this dataset was used."
+    ]
+  },
+  "hybrid_policy": "union",
+  "hybrid_per_category_policy": {
+    "buffer-overflow": {
+      "policy": "ml",
+      "validation_f1": 0.9927
+    },
+    "format-string": {
+      "policy": "ml",
+      "validation_f1": 1.0
+    },
+    "integer-overflow": {
+      "policy": "ml",
+      "validation_f1": 1.0
+    },
+    "divide-by-zero": {
+      "policy": "ml",
+      "validation_f1": 1.0
+    },
+    "null-pointer-dereference": {
+      "policy": "ml",
+      "validation_f1": 0.9492
+    },
+    "double-free": {
+      "policy": "ml",
+      "validation_f1": 1.0
+    },
+    "use-after-free": {
+      "policy": "ml",
+      "validation_f1": 0.0
+    },
+    "memory-leak": {
+      "policy": "ml",
+      "validation_f1": 0.7586
+    },
+    "uninitialized-variable": {
+      "policy": "ml",
+      "validation_f1": 0.991
+    },
+    "command-injection": {
+      "policy": "ml",
+      "validation_f1": 1.0
+    },
+    "invalid-free": {
+      "policy": "ml",
+      "validation_f1": 0.9496
+    }
+  },
+  "validation_policy_micro_f1": {
+    "union": 0.8684,
+    "intersection": 0.1606
+  },
+  "test": {
+    "samples": 3158,
+    "rule_only": {
+      "per_category": {
+        "buffer-overflow": {
+          "support": 404,
+          "tp": 64,
+          "fp": 171,
+          "fn": 340,
+          "tn": 2583,
+          "precision": 0.2723,
+          "recall": 0.1584,
+          "f1": 0.2003
+        },
+        "format-string": {
+          "support": 42,
+          "tp": 21,
+          "fp": 0,
+          "fn": 21,
+          "tn": 3116,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1": 0.6667
+        },
+        "integer-overflow": {
+          "support": 441,
+          "tp": 0,
+          "fp": 0,
+          "fn": 441,
+          "tn": 2717,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "divide-by-zero": {
+          "support": 56,
+          "tp": 0,
+          "fp": 0,
+          "fn": 56,
+          "tn": 3102,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "null-pointer-dereference": {
+          "support": 18,
+          "tp": 0,
+          "fp": 18,
+          "fn": 18,
+          "tn": 3122,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "double-free": {
+          "support": 29,
+          "tp": 17,
+          "fp": 6,
+          "fn": 12,
+          "tn": 3123,
+          "precision": 0.7391,
+          "recall": 0.5862,
+          "f1": 0.6538
+        },
+        "use-after-free": {
+          "support": 19,
+          "tp": 17,
+          "fp": 8,
+          "fn": 2,
+          "tn": 3131,
+          "precision": 0.68,
+          "recall": 0.8947,
+          "f1": 0.7727
+        },
+        "memory-leak": {
+          "support": 75,
+          "tp": 0,
+          "fp": 110,
+          "fn": 75,
+          "tn": 2973,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "uninitialized-variable": {
+          "support": 72,
+          "tp": 16,
+          "fp": 0,
+          "fn": 56,
+          "tn": 3086,
+          "precision": 1.0,
+          "recall": 0.2222,
+          "f1": 0.3636
+        },
+        "command-injection": {
+          "support": 63,
+          "tp": 0,
+          "fp": 0,
+          "fn": 63,
+          "tn": 3095,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "invalid-free": {
+          "support": 78,
+          "tp": 21,
+          "fp": 74,
+          "fn": 57,
+          "tn": 3006,
+          "precision": 0.2211,
+          "recall": 0.2692,
+          "f1": 0.2428
+        }
+      },
+      "micro": {
+        "precision": 0.2873,
+        "recall": 0.1203,
+        "f1": 0.1696,
+        "tp": 156,
+        "fp": 387,
+        "fn": 1141
+      },
+      "macro_f1": 0.2636,
+      "any_vulnerability": {
+        "precision": 0.5229,
+        "recall": 0.1871,
+        "f1": 0.2755,
+        "tp": 240,
+        "fp": 219,
+        "fn": 1043
+      },
+      "exact_match_ratio": 0.5659,
+      "samples": 3158
+    },
+    "ml_only": {
+      "per_category": {
+        "buffer-overflow": {
+          "support": 404,
+          "tp": 394,
+          "fp": 1,
+          "fn": 10,
+          "tn": 2753,
+          "precision": 0.9975,
+          "recall": 0.9752,
+          "f1": 0.9862
+        },
+        "format-string": {
+          "support": 42,
+          "tp": 41,
+          "fp": 0,
+          "fn": 1,
+          "tn": 3116,
+          "precision": 1.0,
+          "recall": 0.9762,
+          "f1": 0.988
+        },
+        "integer-overflow": {
+          "support": 441,
+          "tp": 431,
+          "fp": 0,
+          "fn": 10,
+          "tn": 2717,
+          "precision": 1.0,
+          "recall": 0.9773,
+          "f1": 0.9885
+        },
+        "divide-by-zero": {
+          "support": 56,
+          "tp": 51,
+          "fp": 1,
+          "fn": 5,
+          "tn": 3101,
+          "precision": 0.9808,
+          "recall": 0.9107,
+          "f1": 0.9444
+        },
+        "null-pointer-dereference": {
+          "support": 18,
+          "tp": 18,
+          "fp": 18,
+          "fn": 0,
+          "tn": 3122,
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1": 0.6667
+        },
+        "double-free": {
+          "support": 29,
+          "tp": 17,
+          "fp": 0,
+          "fn": 12,
+          "tn": 3129,
+          "precision": 1.0,
+          "recall": 0.5862,
+          "f1": 0.7391
+        },
+        "use-after-free": {
+          "support": 19,
+          "tp": 3,
+          "fp": 0,
+          "fn": 16,
+          "tn": 3139,
+          "precision": 1.0,
+          "recall": 0.1579,
+          "f1": 0.2727
+        },
+        "memory-leak": {
+          "support": 75,
+          "tp": 75,
+          "fp": 0,
+          "fn": 0,
+          "tn": 3083,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "uninitialized-variable": {
+          "support": 72,
+          "tp": 56,
+          "fp": 0,
+          "fn": 16,
+          "tn": 3086,
+          "precision": 1.0,
+          "recall": 0.7778,
+          "f1": 0.875
+        },
+        "command-injection": {
+          "support": 63,
+          "tp": 63,
+          "fp": 0,
+          "fn": 0,
+          "tn": 3095,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "invalid-free": {
+          "support": 78,
+          "tp": 78,
+          "fp": 14,
+          "fn": 0,
+          "tn": 3066,
+          "precision": 0.8478,
+          "recall": 1.0,
+          "f1": 0.9176
+        }
+      },
+      "micro": {
+        "precision": 0.973,
+        "recall": 0.946,
+        "f1": 0.9593,
+        "tp": 1227,
+        "fp": 34,
+        "fn": 70
+      },
+      "macro_f1": 0.8526,
+      "any_vulnerability": {
+        "precision": 0.9768,
+        "recall": 0.9532,
+        "f1": 0.9649,
+        "tp": 1223,
+        "fp": 29,
+        "fn": 60
+      },
+      "exact_match_ratio": 0.9702,
+      "samples": 3158
+    },
+    "hybrid": {
+      "per_category": {
+        "buffer-overflow": {
+          "support": 404,
+          "tp": 394,
+          "fp": 172,
+          "fn": 10,
+          "tn": 2582,
+          "precision": 0.6961,
+          "recall": 0.9752,
+          "f1": 0.8124
+        },
+        "format-string": {
+          "support": 42,
+          "tp": 41,
+          "fp": 0,
+          "fn": 1,
+          "tn": 3116,
+          "precision": 1.0,
+          "recall": 0.9762,
+          "f1": 0.988
+        },
+        "integer-overflow": {
+          "support": 441,
+          "tp": 431,
+          "fp": 0,
+          "fn": 10,
+          "tn": 2717,
+          "precision": 1.0,
+          "recall": 0.9773,
+          "f1": 0.9885
+        },
+        "divide-by-zero": {
+          "support": 56,
+          "tp": 51,
+          "fp": 1,
+          "fn": 5,
+          "tn": 3101,
+          "precision": 0.9808,
+          "recall": 0.9107,
+          "f1": 0.9444
+        },
+        "null-pointer-dereference": {
+          "support": 18,
+          "tp": 18,
+          "fp": 36,
+          "fn": 0,
+          "tn": 3104,
+          "precision": 0.3333,
+          "recall": 1.0,
+          "f1": 0.5
+        },
+        "double-free": {
+          "support": 29,
+          "tp": 17,
+          "fp": 6,
+          "fn": 12,
+          "tn": 3123,
+          "precision": 0.7391,
+          "recall": 0.5862,
+          "f1": 0.6538
+        },
+        "use-after-free": {
+          "support": 19,
+          "tp": 18,
+          "fp": 8,
+          "fn": 1,
+          "tn": 3131,
+          "precision": 0.6923,
+          "recall": 0.9474,
+          "f1": 0.8
+        },
+        "memory-leak": {
+          "support": 75,
+          "tp": 75,
+          "fp": 110,
+          "fn": 0,
+          "tn": 2973,
+          "precision": 0.4054,
+          "recall": 1.0,
+          "f1": 0.5769
+        },
+        "uninitialized-variable": {
+          "support": 72,
+          "tp": 71,
+          "fp": 0,
+          "fn": 1,
+          "tn": 3086,
+          "precision": 1.0,
+          "recall": 0.9861,
+          "f1": 0.993
+        },
+        "command-injection": {
+          "support": 63,
+          "tp": 63,
+          "fp": 0,
+          "fn": 0,
+          "tn": 3095,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "invalid-free": {
+          "support": 78,
+          "tp": 78,
+          "fp": 87,
+          "fn": 0,
+          "tn": 2993,
+          "precision": 0.4727,
+          "recall": 1.0,
+          "f1": 0.642
+        }
+      },
+      "micro": {
+        "precision": 0.7496,
+        "recall": 0.9692,
+        "f1": 0.8453,
+        "tp": 1257,
+        "fp": 420,
+        "fn": 40
+      },
+      "macro_f1": 0.809,
+      "any_vulnerability": {
+        "precision": 0.8353,
+        "recall": 0.9805,
+        "f1": 0.9021,
+        "tp": 1258,
+        "fp": 248,
+        "fn": 25
+      },
+      "exact_match_ratio": 0.8778,
+      "samples": 3158
+    },
+    "hybrid_per_category_policy": {
+      "per_category": {
+        "buffer-overflow": {
+          "support": 404,
+          "tp": 394,
+          "fp": 1,
+          "fn": 10,
+          "tn": 2753,
+          "precision": 0.9975,
+          "recall": 0.9752,
+          "f1": 0.9862
+        },
+        "format-string": {
+          "support": 42,
+          "tp": 41,
+          "fp": 0,
+          "fn": 1,
+          "tn": 3116,
+          "precision": 1.0,
+          "recall": 0.9762,
+          "f1": 0.988
+        },
+        "integer-overflow": {
+          "support": 441,
+          "tp": 431,
+          "fp": 0,
+          "fn": 10,
+          "tn": 2717,
+          "precision": 1.0,
+          "recall": 0.9773,
+          "f1": 0.9885
+        },
+        "divide-by-zero": {
+          "support": 56,
+          "tp": 51,
+          "fp": 1,
+          "fn": 5,
+          "tn": 3101,
+          "precision": 0.9808,
+          "recall": 0.9107,
+          "f1": 0.9444
+        },
+        "null-pointer-dereference": {
+          "support": 18,
+          "tp": 18,
+          "fp": 18,
+          "fn": 0,
+          "tn": 3122,
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1": 0.6667
+        },
+        "double-free": {
+          "support": 29,
+          "tp": 17,
+          "fp": 0,
+          "fn": 12,
+          "tn": 3129,
+          "precision": 1.0,
+          "recall": 0.5862,
+          "f1": 0.7391
+        },
+        "use-after-free": {
+          "support": 19,
+          "tp": 3,
+          "fp": 0,
+          "fn": 16,
+          "tn": 3139,
+          "precision": 1.0,
+          "recall": 0.1579,
+          "f1": 0.2727
+        },
+        "memory-leak": {
+          "support": 75,
+          "tp": 75,
+          "fp": 0,
+          "fn": 0,
+          "tn": 3083,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "uninitialized-variable": {
+          "support": 72,
+          "tp": 56,
+          "fp": 0,
+          "fn": 16,
+          "tn": 3086,
+          "precision": 1.0,
+          "recall": 0.7778,
+          "f1": 0.875
+        },
+        "command-injection": {
+          "support": 63,
+          "tp": 63,
+          "fp": 0,
+          "fn": 0,
+          "tn": 3095,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "invalid-free": {
+          "support": 78,
+          "tp": 78,
+          "fp": 14,
+          "fn": 0,
+          "tn": 3066,
+          "precision": 0.8478,
+          "recall": 1.0,
+          "f1": 0.9176
+        }
+      },
+      "micro": {
+        "precision": 0.973,
+        "recall": 0.946,
+        "f1": 0.9593,
+        "tp": 1227,
+        "fp": 34,
+        "fn": 70
+      },
+      "macro_f1": 0.8526,
+      "any_vulnerability": {
+        "precision": 0.9768,
+        "recall": 0.9532,
+        "f1": 0.9649,
+        "tp": 1223,
+        "fp": 29,
+        "fn": 60
+      },
+      "exact_match_ratio": 0.9702,
+      "samples": 3158
+    },
+    "hybrid_other_policy": {
+      "per_category": {
+        "buffer-overflow": {
+          "support": 404,
+          "tp": 64,
+          "fp": 0,
+          "fn": 340,
+          "tn": 2754,
+          "precision": 1.0,
+          "recall": 0.1584,
+          "f1": 0.2735
+        },
+        "format-string": {
+          "support": 42,
+          "tp": 21,
+          "fp": 0,
+          "fn": 21,
+          "tn": 3116,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1": 0.6667
+        },
+        "integer-overflow": {
+          "support": 441,
+          "tp": 0,
+          "fp": 0,
+          "fn": 441,
+          "tn": 2717,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "divide-by-zero": {
+          "support": 56,
+          "tp": 0,
+          "fp": 0,
+          "fn": 56,
+          "tn": 3102,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "null-pointer-dereference": {
+          "support": 18,
+          "tp": 0,
+          "fp": 0,
+          "fn": 18,
+          "tn": 3140,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "double-free": {
+          "support": 29,
+          "tp": 17,
+          "fp": 0,
+          "fn": 12,
+          "tn": 3129,
+          "precision": 1.0,
+          "recall": 0.5862,
+          "f1": 0.7391
+        },
+        "use-after-free": {
+          "support": 19,
+          "tp": 2,
+          "fp": 0,
+          "fn": 17,
+          "tn": 3139,
+          "precision": 1.0,
+          "recall": 0.1053,
+          "f1": 0.1905
+        },
+        "memory-leak": {
+          "support": 75,
+          "tp": 0,
+          "fp": 0,
+          "fn": 75,
+          "tn": 3083,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "uninitialized-variable": {
+          "support": 72,
+          "tp": 1,
+          "fp": 0,
+          "fn": 71,
+          "tn": 3086,
+          "precision": 1.0,
+          "recall": 0.0139,
+          "f1": 0.0274
+        },
+        "command-injection": {
+          "support": 63,
+          "tp": 0,
+          "fp": 0,
+          "fn": 63,
+          "tn": 3095,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "invalid-free": {
+          "support": 78,
+          "tp": 21,
+          "fp": 1,
+          "fn": 57,
+          "tn": 3079,
+          "precision": 0.9545,
+          "recall": 0.2692,
+          "f1": 0.42
+        }
+      },
+      "micro": {
+        "precision": 0.9921,
+        "recall": 0.0971,
+        "f1": 0.177,
+        "tp": 126,
+        "fp": 1,
+        "fn": 1171
+      },
+      "macro_f1": 0.2107,
+      "any_vulnerability": {
+        "precision": 1.0,
+        "recall": 0.099,
+        "f1": 0.1801,
+        "tp": 127,
+        "fp": 0,
+        "fn": 1156
+      },
+      "exact_match_ratio": 0.6336,
+      "samples": 3158
+    }
+  },
+  "bootstrap_95ci_cluster_by_group": {
+    "rule_only": {
+      "micro_f1": [
+        0.0855,
+        0.2671
+      ],
+      "macro_f1": [
+        0.0911,
+        0.3569
+      ]
+    },
+    "ml_only": {
+      "micro_f1": [
+        0.9249,
+        0.9863
+      ],
+      "macro_f1": [
+        0.763,
+        0.9691
+      ]
+    },
+    "hybrid": {
+      "micro_f1": [
+        0.7725,
+        0.9167
+      ],
+      "macro_f1": [
+        0.7325,
+        0.9193
+      ]
+    },
+    "hybrid_per_category_policy": {
+      "micro_f1": [
+        0.9249,
+        0.9863
+      ],
+      "macro_f1": [
+        0.763,
+        0.9691
+      ]
+    }
+  },
+  "rule_localisation": {
+    "tolerance_lines": 2,
+    "detected_with_flaw_annotation": 156,
+    "localised": 153,
+    "localisation_rate": 0.9808
+  },
+  "feature_set_comparison": [
+    {
+      "candidate": "combined_C1.0",
+      "feature_set": "combined",
+      "C": 1.0,
+      "selected": false,
+      "test_micro_f1": 0.9399,
+      "test_macro_f1": 0.7863
+    },
+    {
+      "candidate": "combined_C10.0",
+      "feature_set": "combined",
+      "C": 10.0,
+      "selected": true,
+      "test_micro_f1": 0.9593,
+      "test_macro_f1": 0.8526
+    },
+    {
+      "candidate": "structure_C1.0",
+      "feature_set": "structure",
+      "C": 1.0,
+      "selected": false,
+      "test_micro_f1": 0.9374,
+      "test_macro_f1": 0.7406
+    },
+    {
+      "candidate": "structure_C10.0",
+      "feature_set": "structure",
+      "C": 10.0,
+      "selected": false,
+      "test_micro_f1": 0.962,
+      "test_macro_f1": 0.7798
+    },
+    {
+      "candidate": "text_C1.0",
+      "feature_set": "text",
+      "C": 1.0,
+      "selected": false,
+      "test_micro_f1": 0.8925,
+      "test_macro_f1": 0.826
+    },
+    {
+      "candidate": "text_C10.0",
+      "feature_set": "text",
+      "C": 10.0,
+      "selected": false,
+      "test_micro_f1": 0.9457,
+      "test_macro_f1": 0.8083
+    }
+  ],
+  "composite_multi_vulnerability_files": {
+    "note": "Synthetic files built by concatenating 2-3 vulnerable test-split functions of different categories plus one safe function. Exercises the file-level path (function splitting, pooling); not real multi-vulnerability code.",
+    "files": 400,
+    "labels_per_file_mean": 2.63,
+    "rule_only": {
+      "per_category": {
+        "buffer-overflow": {
+          "support": 158,
+          "tp": 40,
+          "fp": 25,
+          "fn": 118,
+          "tn": 217,
+          "precision": 0.6154,
+          "recall": 0.2532,
+          "f1": 0.3587
+        },
+        "format-string": {
+          "support": 80,
+          "tp": 39,
+          "fp": 0,
+          "fn": 41,
+          "tn": 320,
+          "precision": 1.0,
+          "recall": 0.4875,
+          "f1": 0.6555
+        },
+        "integer-overflow": {
+          "support": 150,
+          "tp": 0,
+          "fp": 0,
+          "fn": 150,
+          "tn": 250,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "divide-by-zero": {
+          "support": 81,
+          "tp": 0,
+          "fp": 0,
+          "fn": 81,
+          "tn": 319,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "null-pointer-dereference": {
+          "support": 85,
+          "tp": 3,
+          "fp": 9,
+          "fn": 82,
+          "tn": 306,
+          "precision": 0.25,
+          "recall": 0.0353,
+          "f1": 0.0619
+        },
+        "double-free": {
+          "support": 82,
+          "tp": 46,
+          "fp": 2,
+          "fn": 36,
+          "tn": 316,
+          "precision": 0.9583,
+          "recall": 0.561,
+          "f1": 0.7077
+        },
+        "use-after-free": {
+          "support": 91,
+          "tp": 88,
+          "fp": 85,
+          "fn": 3,
+          "tn": 224,
+          "precision": 0.5087,
+          "recall": 0.967,
+          "f1": 0.6667
+        },
+        "memory-leak": {
+          "support": 62,
+          "tp": 6,
+          "fp": 21,
+          "fn": 56,
+          "tn": 317,
+          "precision": 0.2222,
+          "recall": 0.0968,
+          "f1": 0.1348
+        },
+        "uninitialized-variable": {
+          "support": 97,
+          "tp": 0,
+          "fp": 0,
+          "fn": 97,
+          "tn": 303,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "command-injection": {
+          "support": 81,
+          "tp": 0,
+          "fp": 0,
+          "fn": 81,
+          "tn": 319,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "invalid-free": {
+          "support": 85,
+          "tp": 27,
+          "fp": 16,
+          "fn": 58,
+          "tn": 299,
+          "precision": 0.6279,
+          "recall": 0.3176,
+          "f1": 0.4219
+        }
+      },
+      "micro": {
+        "precision": 0.6118,
+        "recall": 0.2367,
+        "f1": 0.3413,
+        "tp": 249,
+        "fp": 158,
+        "fn": 803
+      },
+      "macro_f1": 0.2734,
+      "any_vulnerability": {
+        "precision": 1.0,
+        "recall": 0.6525,
+        "f1": 0.7897,
+        "tp": 261,
+        "fp": 0,
+        "fn": 139
+      },
+      "exact_match_ratio": 0.0325,
+      "samples": 400
+    },
+    "ml_only": {
+      "per_category": {
+        "buffer-overflow": {
+          "support": 158,
+          "tp": 106,
+          "fp": 0,
+          "fn": 52,
+          "tn": 242,
+          "precision": 1.0,
+          "recall": 0.6709,
+          "f1": 0.803
+        },
+        "format-string": {
+          "support": 80,
+          "tp": 80,
+          "fp": 0,
+          "fn": 0,
+          "tn": 320,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "integer-overflow": {
+          "support": 150,
+          "tp": 96,
+          "fp": 0,
+          "fn": 54,
+          "tn": 250,
+          "precision": 1.0,
+          "recall": 0.64,
+          "f1": 0.7805
+        },
+        "divide-by-zero": {
+          "support": 81,
+          "tp": 75,
+          "fp": 0,
+          "fn": 6,
+          "tn": 319,
+          "precision": 1.0,
+          "recall": 0.9259,
+          "f1": 0.9615
+        },
+        "null-pointer-dereference": {
+          "support": 85,
+          "tp": 85,
+          "fp": 3,
+          "fn": 0,
+          "tn": 312,
+          "precision": 0.9659,
+          "recall": 1.0,
+          "f1": 0.9827
+        },
+        "double-free": {
+          "support": 82,
+          "tp": 46,
+          "fp": 0,
+          "fn": 36,
+          "tn": 318,
+          "precision": 1.0,
+          "recall": 0.561,
+          "f1": 0.7188
+        },
+        "use-after-free": {
+          "support": 91,
+          "tp": 12,
+          "fp": 0,
+          "fn": 79,
+          "tn": 309,
+          "precision": 1.0,
+          "recall": 0.1319,
+          "f1": 0.233
+        },
+        "memory-leak": {
+          "support": 62,
+          "tp": 62,
+          "fp": 0,
+          "fn": 0,
+          "tn": 338,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "uninitialized-variable": {
+          "support": 97,
+          "tp": 74,
+          "fp": 0,
+          "fn": 23,
+          "tn": 303,
+          "precision": 1.0,
+          "recall": 0.7629,
+          "f1": 0.8655
+        },
+        "command-injection": {
+          "support": 81,
+          "tp": 81,
+          "fp": 0,
+          "fn": 0,
+          "tn": 319,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "invalid-free": {
+          "support": 85,
+          "tp": 85,
+          "fp": 3,
+          "fn": 0,
+          "tn": 312,
+          "precision": 0.9659,
+          "recall": 1.0,
+          "f1": 0.9827
+        }
+      },
+      "micro": {
+        "precision": 0.9926,
+        "recall": 0.7624,
+        "f1": 0.8624,
+        "tp": 802,
+        "fp": 6,
+        "fn": 250
+      },
+      "macro_f1": 0.848,
+      "any_vulnerability": {
+        "precision": 1.0,
+        "recall": 0.9775,
+        "f1": 0.9886,
+        "tp": 391,
+        "fp": 0,
+        "fn": 9
+      },
+      "exact_match_ratio": 0.54,
+      "samples": 400
+    },
+    "hybrid_union": {
+      "per_category": {
+        "buffer-overflow": {
+          "support": 158,
+          "tp": 115,
+          "fp": 25,
+          "fn": 43,
+          "tn": 217,
+          "precision": 0.8214,
+          "recall": 0.7278,
+          "f1": 0.7718
+        },
+        "format-string": {
+          "support": 80,
+          "tp": 80,
+          "fp": 0,
+          "fn": 0,
+          "tn": 320,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "integer-overflow": {
+          "support": 150,
+          "tp": 96,
+          "fp": 0,
+          "fn": 54,
+          "tn": 250,
+          "precision": 1.0,
+          "recall": 0.64,
+          "f1": 0.7805
+        },
+        "divide-by-zero": {
+          "support": 81,
+          "tp": 75,
+          "fp": 0,
+          "fn": 6,
+          "tn": 319,
+          "precision": 1.0,
+          "recall": 0.9259,
+          "f1": 0.9615
+        },
+        "null-pointer-dereference": {
+          "support": 85,
+          "tp": 85,
+          "fp": 12,
+          "fn": 0,
+          "tn": 303,
+          "precision": 0.8763,
+          "recall": 1.0,
+          "f1": 0.9341
+        },
+        "double-free": {
+          "support": 82,
+          "tp": 46,
+          "fp": 2,
+          "fn": 36,
+          "tn": 316,
+          "precision": 0.9583,
+          "recall": 0.561,
+          "f1": 0.7077
+        },
+        "use-after-free": {
+          "support": 91,
+          "tp": 88,
+          "fp": 85,
+          "fn": 3,
+          "tn": 224,
+          "precision": 0.5087,
+          "recall": 0.967,
+          "f1": 0.6667
+        },
+        "memory-leak": {
+          "support": 62,
+          "tp": 62,
+          "fp": 21,
+          "fn": 0,
+          "tn": 317,
+          "precision": 0.747,
+          "recall": 1.0,
+          "f1": 0.8552
+        },
+        "uninitialized-variable": {
+          "support": 97,
+          "tp": 74,
+          "fp": 0,
+          "fn": 23,
+          "tn": 303,
+          "precision": 1.0,
+          "recall": 0.7629,
+          "f1": 0.8655
+        },
+        "command-injection": {
+          "support": 81,
+          "tp": 81,
+          "fp": 0,
+          "fn": 0,
+          "tn": 319,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "invalid-free": {
+          "support": 85,
+          "tp": 85,
+          "fp": 19,
+          "fn": 0,
+          "tn": 296,
+          "precision": 0.8173,
+          "recall": 1.0,
+          "f1": 0.8995
+        }
+      },
+      "micro": {
+        "precision": 0.844,
+        "recall": 0.8432,
+        "f1": 0.8436,
+        "tp": 887,
+        "fp": 164,
+        "fn": 165
+      },
+      "macro_f1": 0.8584,
+      "any_vulnerability": {
+        "precision": 1.0,
+        "recall": 0.9975,
+        "f1": 0.9987,
+        "tp": 399,
+        "fp": 0,
+        "fn": 1
+      },
+      "exact_match_ratio": 0.485,
+      "samples": 400
+    }
+  },
+  "handwritten_cases_sanity": {
+    "note": "20 hand-written snippets from the original project (not Juliet). A tiny sanity check on out-of-distribution input, not a performance estimate.",
+    "cases": [
+      {
+        "id": "division_by_zero",
+        "label": "vulnerable",
+        "expected_category": "divide-by-zero",
+        "rule_categories": [
+          "divide-by-zero"
+        ],
+        "ml_categories": []
+      },
+      {
+        "id": "modulo_by_zero",
+        "label": "vulnerable",
+        "expected_category": "divide-by-zero",
+        "rule_categories": [
+          "divide-by-zero"
+        ],
+        "ml_categories": []
+      },
+      {
+        "id": "uninitialized_variable",
+        "label": "vulnerable",
+        "expected_category": "uninitialized-variable",
+        "rule_categories": [
+          "uninitialized-variable"
+        ],
+        "ml_categories": []
+      },
+      {
+        "id": "constant_condition",
+        "label": "vulnerable",
+        "expected_category": "logic",
+        "rule_categories": [
+          "logic"
+        ],
+        "ml_categories": []
+      },
+      {
+        "id": "constant_loop_condition",
+        "label": "vulnerable",
+        "expected_category": "logic",
+        "rule_categories": [
+          "logic"
+        ],
+        "ml_categories": []
+      },
+      {
+        "id": "unsafe_gets",
+        "label": "vulnerable",
+        "expected_category": "buffer-overflow",
+        "rule_categories": [
+          "buffer-overflow"
+        ],
+        "ml_categories": []
+      },
+      {
+        "id": "unsafe_strcpy",
+        "label": "vulnerable",
+        "expected_category": "buffer-overflow",
+        "rule_categories": [
+          "buffer-overflow"
+        ],
+        "ml_categories": []
+      },
+      {
+        "id": "unsafe_strcat",
+        "label": "vulnerable",
+        "expected_category": "buffer-overflow",
+        "rule_categories": [
+          "buffer-overflow"
+        ],
+        "ml_categories": []
+      },
+      {
+        "id": "unsafe_sprintf",
+        "label": "vulnerable",
+        "expected_category": "buffer-overflow",
+        "rule_categories": [
+          "buffer-overflow"
+        ],
+        "ml_categories": []
+      },
+      {
+        "id": "unbounded_scanf",
+        "label": "vulnerable",
+        "expected_category": "buffer-overflow",
+        "rule_categories": [
+          "buffer-overflow"
+        ],
+        "ml_categories": []
+      },
+      {
+        "id": "nonliteral_printf",
+        "label": "vulnerable",
+        "expected_category": "format-string",
+        "rule_categories": [
+          "format-string"
+        ],
+        "ml_categories": []
+      },
+      {
+        "id": "system_call",
+        "label": "vulnerable",
+        "expected_category": "command-injection",
+        "rule_categories": [
+          "command-injection"
+        ],
+        "ml_categories": []
+      },
+      {
+        "id": "safe_division",
+        "label": "safe",
+        "expected_category": null,
+        "rule_categories": [],
+        "ml_categories": []
+      },
+      {
+        "id": "safe_modulo",
+        "label": "safe",
+        "expected_category": null,
+        "rule_categories": [],
+        "ml_categories": []
+      },
+      {
+        "id": "bounded_scanf",
+        "label": "safe",
+        "expected_category": null,
+        "rule_categories": [],
+        "ml_categories": []
+      },
+      {
+        "id": "literal_printf",
+        "label": "safe",
+        "expected_category": null,
+        "rule_categories": [],
+        "ml_categories": []
+      },
+      {
+        "id": "formatted_printf",
+        "label": "safe",
+        "expected_category": null,
+        "rule_categories": [],
+        "ml_categories": []
+      },
+      {
+        "id": "loop_with_update",
+        "label": "safe",
+        "expected_category": null,
+        "rule_categories": [],
+        "ml_categories": []
+      },
+      {
+        "id": "safe_arithmetic",
+        "label": "safe",
+        "expected_category": null,
+        "rule_categories": [],
+        "ml_categories": []
+      },
+      {
+        "id": "initialized_assignment",
+        "label": "safe",
+        "expected_category": null,
+        "rule_categories": [],
+        "ml_categories": []
+      }
+    ],
+    "vulnerable_cases_in_ml_scope": 10,
+    "ml_detected_expected_category": 0,
+    "rules_detected_expected_category": 10,
+    "safe_cases": 8,
+    "safe_cases_with_ml_flag": 0,
+    "safe_cases_with_rule_flag": 0
+  },
+  "model": {
+    "feature_set": "combined",
+    "C": 10.0,
+    "thresholds": {
+      "buffer-overflow": 0.5,
+      "format-string": 0.95,
+      "integer-overflow": 0.8,
+      "divide-by-zero": 0.75,
+      "null-pointer-dereference": 0.45,
+      "double-free": 0.95,
+      "use-after-free": 0.95,
+      "memory-leak": 0.95,
+      "uninitialized-variable": 0.9,
+      "command-injection": 0.95,
+      "invalid-free": 0.1
+    },
+    "validation_f1_per_category": {
+      "buffer-overflow": 0.9927461139896373,
+      "format-string": 1.0,
+      "integer-overflow": 1.0,
+      "divide-by-zero": 1.0,
+      "null-pointer-dereference": 0.9491525423728814,
+      "double-free": 1.0,
+      "use-after-free": 0.0,
+      "memory-leak": 0.7586206896551724,
+      "uninitialized-variable": 0.990990990990991,
+      "command-injection": 1.0,
+      "invalid-free": 0.9496402877697842
+    }
+  }
+}

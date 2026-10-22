@@ -10,3 +10,11 @@ __pycache__/
 .vscode/
 .idea/
 *.log
+
+# SecureCompile generated artifacts
+data/
+models/
+src/parsetab.py
+src/parser.out
+parser.out
+parsetab.py
