@@ -1,0 +1,167 @@
+{
+  "project": "SecureCompile",
+  "dataset_version": "1.0",
+  "description": "Small, hand-labelled regression dataset for the currently implemented rules and supported restricted-C grammar. It is a project test set, not a representative security benchmark.",
+  "cases": [
+    {
+      "id": "division_by_zero",
+      "file": "evaluation/cases/vulnerable/division_by_zero.c",
+      "label": "vulnerable",
+      "expected_type": "Division by Zero",
+      "expected_rule_id": "SC-ARITH-001",
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "modulo_by_zero",
+      "file": "evaluation/cases/vulnerable/modulo_by_zero.c",
+      "label": "vulnerable",
+      "expected_type": "Modulo by Zero",
+      "expected_rule_id": "SC-ARITH-002",
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "uninitialized_variable",
+      "file": "evaluation/cases/vulnerable/uninitialized_variable.c",
+      "label": "vulnerable",
+      "expected_type": "Uninitialized Variable",
+      "expected_rule_id": "SC-DATA-001",
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "constant_condition",
+      "file": "evaluation/cases/vulnerable/constant_condition.c",
+      "label": "vulnerable",
+      "expected_type": "Constant Condition",
+      "expected_rule_id": "SC-LOGIC-001",
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "constant_loop_condition",
+      "file": "evaluation/cases/vulnerable/constant_loop_condition.c",
+      "label": "vulnerable",
+      "expected_type": "Constant Loop Condition",
+      "expected_rule_id": "SC-LOGIC-002",
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "unsafe_gets",
+      "file": "evaluation/cases/vulnerable/unsafe_gets.c",
+      "label": "vulnerable",
+      "expected_type": "Potentially Unsafe Function",
+      "expected_rule_id": "SC-MEM-001",
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "unsafe_strcpy",
+      "file": "evaluation/cases/vulnerable/unsafe_strcpy.c",
+      "label": "vulnerable",
+      "expected_type": "Potentially Unsafe Function",
+      "expected_rule_id": "SC-MEM-002",
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "unsafe_strcat",
+      "file": "evaluation/cases/vulnerable/unsafe_strcat.c",
+      "label": "vulnerable",
+      "expected_type": "Potentially Unsafe Function",
+      "expected_rule_id": "SC-MEM-003",
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "unsafe_sprintf",
+      "file": "evaluation/cases/vulnerable/unsafe_sprintf.c",
+      "label": "vulnerable",
+      "expected_type": "Potentially Unsafe Function",
+      "expected_rule_id": "SC-MEM-004",
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "unbounded_scanf",
+      "file": "evaluation/cases/vulnerable/unbounded_scanf.c",
+      "label": "vulnerable",
+      "expected_type": "Unbounded String Input",
+      "expected_rule_id": "SC-INPUT-001",
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "nonliteral_printf",
+      "file": "evaluation/cases/vulnerable/nonliteral_printf.c",
+      "label": "vulnerable",
+      "expected_type": "Potential Format String Vulnerability",
+      "expected_rule_id": "SC-INPUT-002",
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "system_call",
+      "file": "evaluation/cases/vulnerable/system_call.c",
+      "label": "vulnerable",
+      "expected_type": "Command Execution Risk",
+      "expected_rule_id": "SC-CMD-001",
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "safe_division",
+      "file": "evaluation/cases/safe/safe_division.c",
+      "label": "safe",
+      "expected_type": null,
+      "expected_rule_id": null,
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "safe_modulo",
+      "file": "evaluation/cases/safe/safe_modulo.c",
+      "label": "safe",
+      "expected_type": null,
+      "expected_rule_id": null,
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "bounded_scanf",
+      "file": "evaluation/cases/safe/bounded_scanf.c",
+      "label": "safe",
+      "expected_type": null,
+      "expected_rule_id": null,
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "literal_printf",
+      "file": "evaluation/cases/safe/literal_printf.c",
+      "label": "safe",
+      "expected_type": null,
+      "expected_rule_id": null,
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "formatted_printf",
+      "file": "evaluation/cases/safe/formatted_printf.c",
+      "label": "safe",
+      "expected_type": null,
+      "expected_rule_id": null,
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "loop_with_update",
+      "file": "evaluation/cases/safe/loop_with_update.c",
+      "label": "safe",
+      "expected_type": null,
+      "expected_rule_id": null,
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "safe_arithmetic",
+      "file": "evaluation/cases/safe/safe_arithmetic.c",
+      "label": "safe",
+      "expected_type": null,
+      "expected_rule_id": null,
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    },
+    {
+      "id": "initialized_assignment",
+      "file": "evaluation/cases/safe/initialized_assignment.c",
+      "label": "safe",
+      "expected_type": null,
+      "expected_rule_id": null,
+      "note": "Restricted-C test snippet; not necessarily a complete standalone C translation unit."
+    }
+  ]
+}

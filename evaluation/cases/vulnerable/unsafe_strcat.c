@@ -1,0 +1,1 @@
+strcat(destination, "hello");

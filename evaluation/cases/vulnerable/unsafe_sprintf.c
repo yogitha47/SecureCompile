@@ -1,0 +1,1 @@
+sprintf(destination, "%s", "hello");

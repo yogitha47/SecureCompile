@@ -1,0 +1,179 @@
+{
+    "project": "SecureCompile",
+    "files_processed": 6,
+    "errors": 0,
+    "total_findings": 10,
+    "file_results": [
+        {
+            "file": "tests\\safe\\basics.c",
+            "status": "ANALYZED",
+            "findings": [
+                {
+                    "rule_id": "SC-MEM-001",
+                    "type": "Potentially Unsafe Function",
+                    "severity": "HIGH",
+                    "confidence": "MEDIUM",
+                    "message": "Potentially unsafe function 'gets' detected.",
+                    "explanation": "The gets() function reads input without a destination-size limit.",
+                    "suggestion": "Use fgets() with the actual buffer capacity.",
+                    "line": 2
+                }
+            ]
+        },
+        {
+            "file": "tests\\safe\\while_test.c",
+            "status": "ANALYZED",
+            "findings": []
+        },
+        {
+            "file": "tests\\vulnerabilities\\constant_condition.c",
+            "status": "ANALYZED",
+            "findings": [
+                {
+                    "rule_id": "SC-LOGIC-001",
+                    "type": "Constant Condition",
+                    "severity": "MEDIUM",
+                    "confidence": "HIGH",
+                    "message": "Condition is always true.",
+                    "explanation": "The condition has a fixed value and always evaluates to true.",
+                    "suggestion": "Check whether this is intentional. If not, review the comparison or use the variable that should control it.",
+                    "line": 3
+                }
+            ]
+        },
+        {
+            "file": "tests\\vulnerabilities\\division_by_zero.c",
+            "status": "ANALYZED",
+            "findings": [
+                {
+                    "rule_id": "SC-ARITH-001",
+                    "type": "Division by Zero",
+                    "severity": "HIGH",
+                    "confidence": "HIGH",
+                    "message": "Division by zero detected.",
+                    "explanation": "Your program is trying to divide a number by zero. This is invalid arithmetic and can cause undefined behaviour.",
+                    "suggestion": "Check that the divisor is not zero before performing the division.",
+                    "line": 4
+                }
+            ]
+        },
+        {
+            "file": "tests\\vulnerabilities\\uninitialized.c",
+            "status": "ANALYZED",
+            "findings": [
+                {
+                    "rule_id": "SC-DATA-001",
+                    "type": "Uninitialized Variable",
+                    "severity": "HIGH",
+                    "confidence": "MEDIUM",
+                    "message": "Variable 'x' used before initialization.",
+                    "explanation": "The variable 'x' may not have a known value before it is read.",
+                    "suggestion": "Assign an appropriate value to 'x' before using it.",
+                    "line": 2
+                }
+            ]
+        },
+        {
+            "file": "tests\\vulnerabilities\\unsafe_function.c",
+            "status": "ANALYZED",
+            "findings": [
+                {
+                    "rule_id": "SC-MEM-001",
+                    "type": "Potentially Unsafe Function",
+                    "severity": "HIGH",
+                    "confidence": "MEDIUM",
+                    "message": "Potentially unsafe function 'gets' detected.",
+                    "explanation": "The gets() function reads input without a destination-size limit.",
+                    "suggestion": "Use fgets() with the actual buffer capacity.",
+                    "line": 2
+                }
+            ]
+        }
+    ],
+    "regression_results": [
+        {
+            "name": "regression_modulo_by_zero.c",
+            "expected_finding": "Modulo by Zero",
+            "status": "PASS",
+            "findings": [
+                {
+                    "rule_id": "SC-ARITH-002",
+                    "type": "Modulo by Zero",
+                    "severity": "HIGH",
+                    "confidence": "HIGH",
+                    "message": "Modulo by zero detected.",
+                    "explanation": "The remainder operator is being used with zero as its divisor. This is invalid arithmetic and can cause undefined behaviour.",
+                    "suggestion": "Check that the divisor is not zero before calculating the remainder.",
+                    "line": 1
+                }
+            ]
+        },
+        {
+            "name": "regression_unsafe_scanf.c",
+            "expected_finding": "Unbounded String Input",
+            "status": "PASS",
+            "findings": [
+                {
+                    "rule_id": "SC-INPUT-001",
+                    "type": "Unbounded String Input",
+                    "severity": "HIGH",
+                    "confidence": "HIGH",
+                    "message": "scanf() contains a %s conversion without a width limit.",
+                    "explanation": "The input conversion does not specify a maximum number of characters. If the destination buffer is too small, input may overwrite adjacent memory.",
+                    "suggestion": "Specify a field width based on the actual destination capacity, leaving space for the terminating null byte. Check the input result as well.",
+                    "line": 2
+                }
+            ]
+        },
+        {
+            "name": "regression_format_string.c",
+            "expected_finding": "Potential Format String Vulnerability",
+            "status": "PASS",
+            "findings": [
+                {
+                    "rule_id": "SC-DATA-001",
+                    "type": "Uninitialized Variable",
+                    "severity": "HIGH",
+                    "confidence": "MEDIUM",
+                    "message": "Variable 'value' used before initialization.",
+                    "explanation": "The variable 'value' may not have a known value before it is read.",
+                    "suggestion": "Assign an appropriate value to 'value' before using it.",
+                    "line": 2
+                },
+                {
+                    "rule_id": "SC-INPUT-002",
+                    "type": "Potential Format String Vulnerability",
+                    "severity": "HIGH",
+                    "confidence": "MEDIUM",
+                    "message": "printf() may use a non-literal format string.",
+                    "explanation": "If this value contains user-controlled text, formatting directives may be interpreted instead of printed literally.",
+                    "suggestion": "Use a fixed format string such as printf(\"%s\", value) when printing text.",
+                    "line": 2
+                }
+            ]
+        },
+        {
+            "name": "regression_system_call.c",
+            "expected_finding": "Command Execution Risk",
+            "status": "PASS",
+            "findings": [
+                {
+                    "rule_id": "SC-CMD-001",
+                    "type": "Command Execution Risk",
+                    "severity": "MEDIUM",
+                    "confidence": "MEDIUM",
+                    "message": "Use of 'system()' requires security review.",
+                    "explanation": "This function can execute a system command. If command content includes untrusted input, it may allow unintended command execution.",
+                    "suggestion": "Avoid shell commands when possible. If needed, use safer APIs and never concatenate untrusted input into a command string.",
+                    "line": 1
+                }
+            ]
+        },
+        {
+            "name": "regression_safe_arithmetic.c",
+            "expected_finding": null,
+            "status": "PASS",
+            "findings": []
+        }
+    ]
+}

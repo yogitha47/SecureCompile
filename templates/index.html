@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SecureCompile | C Security Analyzer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"><span class="brand-icon">SC</span><span>SecureCompile</span></a>
+    <span class="top-tag">C STATIC ANALYSIS</span>
+  </header>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow"><span class="dot"></span> BEGINNER-FRIENDLY CODE REVIEW</div>
+      <h1>Find risky code.<br><span>Understand how to fix it.</span></h1>
+      <p>Analyze C source with compiler diagnostics when Clang/GCC is installed, plus SecureCompile security heuristics and beginner-friendly explanations.</p>
+    </section>
+    <section class="workspace">
+      <div class="editor-card">
+        <div class="card-heading"><div><h2>Your C code</h2><p>Analysis runs locally on this computer.</p></div><label class="upload-button" for="fileInput">↑ Upload .c</label></div>
+        <form id="analyzeForm">
+          <input id="fileInput" type="file" accept=".c,text/plain" hidden>
+          <div class="editor-toolbar"><span><i></i> main.c</span><span id="charCount">0 characters</span></div>
+          <textarea id="codeInput" spellcheck="false" placeholder="int x = 10;\nint y = 0;\nint result = x / y;" aria-label="C source code"></textarea>
+          <div class="editor-actions"><button class="secondary" type="button" id="sampleButton">Load example</button><div class="action-group"><button class="secondary" type="button" id="shareButton">Share code</button><button class="primary" id="analyzeButton" type="submit">Analyze code <span>→</span></button></div></div><p id="shareStatus" class="micro-status" aria-live="polite"></p>
+        </form>
+        <p class="scope-note"><strong>Analysis layers:</strong> optional compiler syntax/type diagnostics + source-level security heuristics. The security checks are not a proof of safety; complex C semantics may still be missed.</p>
+      </div>
+      <div class="results-card" id="resultsCard">
+        <div class="results-heading"><div><h2>Analysis results</h2><p id="resultSubtitle">Your findings will appear here.</p></div><span class="status-pill idle" id="statusPill">Waiting</span></div>
+        <div class="empty-state" id="emptyState"><div class="empty-icon">⌁</div><h3>Ready when you are</h3><p>Run an analysis to see security findings, affected lines and suggested fixes.</p></div>
+        <div id="errorBox" class="error-box" hidden></div>
+        <div id="summary" class="summary" hidden></div>
+        <div id="compilerPanel" class="compiler-panel" hidden></div><div id="findings" class="findings"></div><section id="memoryPanel" class="memory-panel" hidden><div class="panel-title"><div><h3>Memory &amp; pointer map</h3><p>Approximate source-based view; not a runtime simulation.</p></div></div><div id="memoryMap" class="memory-map"></div></section>
+        <button id="downloadButton" class="download-button" hidden>Download JSON report ↓</button>
+        <p class="disclaimer">A clean result means no issue was found by the implemented rules—not that the program is guaranteed secure.</p>
+      </div>
+    </section>
+    <section class="batch-card">
+      <div><h2>Classroom / multi-file review</h2><p>Select several <code>.c</code> files to create a local summary. Files are analyzed in this browser session and are not saved to a server-side classroom database.</p></div>
+      <div class="batch-controls"><input id="batchFiles" type="file" accept=".c,text/plain" multiple><button id="batchButton" class="secondary" type="button">Review selected files</button></div>
+      <div id="batchResults" class="batch-results" hidden></div>
+    </section>
+    <section class="feature-row">
+      <article><span class="feature-icon purple">⌕</span><div><h3>Clear explanations</h3><p>Understand why a code pattern may be risky.</p></div></article>
+      <article><span class="feature-icon blue">↳</span><div><h3>Line-level learning hints</h3><p>Jump to the affected line and review safe, rule-based fix guidance.</p></div></article>
+      <article><span class="feature-icon pink">⇩</span><div><h3>Portable report</h3><p>Export findings as JSON for project evaluation.</p></div></article>
+    </section>
+    <footer>SecureCompile · Academic static-analysis prototype </footer>
+  </main>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
